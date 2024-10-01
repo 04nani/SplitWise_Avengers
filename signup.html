@@ -172,7 +172,7 @@
                 );
                 console.log('User data stored in database', userData);
 
-                await account.createVerification(window.location.origin + '/verify-email.html');
+                await account.createVerification(window.location.origin + '/verifyEmail.html');
                 console.log('Verification email sent');
 
                 message.textContent = 'Signup successful! Please check your email to verify your account.';
