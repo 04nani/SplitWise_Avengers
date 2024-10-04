@@ -122,20 +122,39 @@
                     Appwrite.Query.equal('status', 'pending')
                 ]);
                 
-                displayFriendRequests(requests.documents);
+                await displayFriendRequests(requests.documents);
             } catch (error) {
                 console.error('Error fetching friend requests:', error);
             }
         }
 
+        // Fetch user information by ID
+        async function getUserInfo(userId) {
+            try {
+                // const user = await databases.getDocument(DATABASE_ID, USERS_COLLECTION_ID, userId);
+
+                let user = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+                    Appwrite.Query.search('accountId', userId)
+                ]);
+                user = user.documents[0];
+                
+                console.log('User info:', user);
+                return user.name || 'Unknown User';
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                return 'Unknown User';
+            }
+        }
+
         // Display friend requests with accept/reject buttons
-        function displayFriendRequests(requests) {
+        async function displayFriendRequests(requests) {
             const requestsList = document.getElementById('friendRequests');
             requestsList.innerHTML = '';
             
-            requests.forEach(request => {
+            for (const request of requests) {
                 const li = document.createElement('li');
-                li.textContent = `Friend request from: ${request.userId}`;
+                const userName = await getUserInfo(request.userId);
+                li.textContent = userName;
 
                 const buttonContainer = document.createElement('div');
 
@@ -151,7 +170,7 @@
                 buttonContainer.appendChild(rejectButton);
                 li.appendChild(buttonContainer);
                 requestsList.appendChild(li);
-            });
+            }
         }
 
         // Update friend request status
