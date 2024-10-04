@@ -21,7 +21,6 @@
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            animation: fadeIn 0.5s ease-in-out;
         }
         h1 {
             text-align: center;
@@ -44,210 +43,161 @@
             outline: none;
             box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
         }
-        button {
-            padding: 0.5rem;
-            background-color: #57BB8A;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-        }
-        button:hover {
-            background-color: #399D6C;
-        }
-        button:active {
-            transform: scale(0.98);
-        }
         ul {
             list-style: none;
             padding: 0;
+            margin-top: 1rem;
         }
         li {
             background-color: #2A2A2A;
             padding: 0.5rem;
             border-radius: 4px;
             margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        button.addFriend {
+            background-color: #57BB8A;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.5rem;
+            cursor: pointer;
+        }
+        button.addFriend:hover {
+            background-color: #399D6C;
+        }
+        .message {
+            margin-top: 1rem;
+            text-align: center;
+            opacity: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Add Friends</h1>
-        <div class="friend-request-form">
-            <!-- Search field with real-time suggestions for friends -->
-            <input type="text" id="friendSearch" placeholder="Search for friends...">
-            <button id="searchButton">Search</button>
-            <ul id="searchResults"></ul> <!-- Search results will be displayed here -->
-        </div>
+        <input type="text" id="friendSearch" placeholder="Search friends..." oninput="searchFriends()">
+        <ul id="searchResults"></ul>
+        <div id="notification" class="message"></div>
 
-        <!-- List of existing friends -->
-        <div class="friend-list">
-            <h2>Your Friends</h2>
-            <ul id="friendList"></ul>
-        </div>
+        <!-- Existing friends list -->
+        <h2>Your Friends</h2>
+        <ul id="friendList"></ul>
     </div>
 
-    <!-- Appwrite SDK -->
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
     <script>
         // Initialize Appwrite client
-        const client = new Appwrite.Client()
-            .setEndpoint('https://cloud.appwrite.io/v1') // Your Appwrite endpoint
-            .setProject('66f9c641001dbbd4bb66'); // Replace with your Appwrite project ID
+// Initialize Appwrite client
+const client = new Appwrite.Client()
+    .setEndpoint('https://cloud.appwrite.io/v1')
+    .setProject('66f9c641001dbbd4bb66'); 
 
-        const databases = new Appwrite.Databases(client);
-        const account = new Appwrite.Account(client);
+const databases = new Appwrite.Databases(client);
+const account = new Appwrite.Account(client);
 
-        // Replace with your actual database and collection IDs
-        const DATABASE_ID = '66f9e43e00253528c7a8'; 
-        const USERS_COLLECTION_ID = '66f9e45d002562334094'; // Users Collection
-        const FRIENDS_COLLECTION_ID = '66fc597e0027848acf57'; // Friends Collection
-        
-        // Function to fetch friends for the logged-in user
-        async function fetchFriends() {
-            try {
-                const accountId = 'your_account_id'; // Replace with logged-in user ID
-                
-                const friends = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-                    Appwrite.Query.equal('accountId', accountId),
-                    Appwrite.Query.equal('status', 'accepted') // Only fetch accepted friends
-                ]);
-                
-                displayFriends(friends.documents);
-            } catch (error) {
-                console.error('Error fetching friends:', error);
-            }
-        }
+const DATABASE_ID = '66f9e43e00253528c7a8'; 
+const USERS_COLLECTION_ID = '66f9e45d002562334094'; 
+const FRIENDS_COLLECTION_ID = '66fc597e0027848acf57'; 
 
-        // Display friends in the "Your Friends" list
-        function displayFriends(friends) {
-            const friendList = document.getElementById('friendList');
-            friendList.innerHTML = ''; // Clear previous list
-            
-            friends.forEach(friend => {
-                const li = document.createElement('li');
-                li.textContent = friend.name;
-                friendList.appendChild(li);
-            });
-        }
+// Function to search friends
+async function searchFriends() {
+    const query = document.getElementById('friendSearch').value;
+    if (!query) {
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
 
-        // Search for friends as the user types
-        document.getElementById('friendSearch').addEventListener('input', async (event) => {
-            const query = event.target.value;
-            
-            if (query) {
-                try {
-                    // Query the Users collection for matching friends
-                    const results = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
-                        Appwrite.Query.search('name', query)
-                    ]);
-                    
-                    displaySearchResults(results.documents);
-                } catch (error) {
-                    console.error('Error fetching search results:', error);
-                }
-            }
-        });
-
-        // Display search results dynamically
-        function displaySearchResults(friends) {
-            const resultsList = document.getElementById('searchResults');
-            resultsList.innerHTML = ''; // Clear previous results
-            
-            friends.forEach(friend => {
-                const li = document.createElement('li');
-                li.textContent = friend.name;
-
-                const sendRequestButton = document.createElement('button');
-                sendRequestButton.textContent = 'Send Friend Request';
-                sendRequestButton.onclick = () => sendFriendRequest(friend.$id); // Friend's ID
-                li.appendChild(sendRequestButton);
-                resultsList.appendChild(li);
-            });
-        }
-
-        // Send friend request using Appwrite
-        async function sendFriendRequest(friendId) {
     try {
-        const accountId = 'your_account_id'; // Replace with the actual logged-in user ID
+        const currentUser = await account.get(); // Get current logged-in user
+        
+        // Fetch friends to exclude them from search results
+        const friends = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+            Appwrite.Query.equal('accountId', currentUser.$id)
+        ]);
+        const friendIds = friends.documents.map(friend => friend.friendId);
 
-        // Add necessary data fields when creating the document
+        // Query the Users collection for matching friends, exclude current user and already added friends
+        const results = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+            Appwrite.Query.search('name', query),
+            Appwrite.Query.notEqual('accountId', currentUser.$id),   // Exclude current user
+            ...friendIds.map(id => Appwrite.Query.notEqual('accountId', id)) // Exclude already added friends
+        ]);
+
+        displaySearchResults(results.documents);
+    } catch (error) {
+        console.error('Error fetching search results:', error);
+    }
+}
+
+// Display search results
+function displaySearchResults(users) {
+    const resultsList = document.getElementById('searchResults');
+    resultsList.innerHTML = '';
+
+    users.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user.name;
+
+        const addButton = document.createElement('button');
+        addButton.textContent = 'Add Friend';
+        addButton.classList.add('addFriend');
+        addButton.onclick = () => sendFriendRequest(user.accountId); // Use accountId
+
+        li.appendChild(addButton);
+        resultsList.appendChild(li);
+    });
+}
+
+// Send friend request
+async function sendFriendRequest(friendId) {
+    try {
+        const currentUser = await account.get();
         const data = {
-            accountId: accountId,    // The ID of the user sending the friend request
-            friendId: friendId,      // The ID of the friend to whom the request is being sent
-            status: 'pending'        // Set the status of the request to 'pending'
+            accountId: currentUser.$id,
+            friendId: friendId,
+            status: 'pending'
         };
 
-        // Use 'unique()' to let Appwrite generate a unique ID for the document
-        await databases.createDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, ID.unique(), data); // 'unique()' generates the ID
-
+        // Use Appwrite.ID.unique() to generate a unique ID for the document
+        await databases.createDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, Appwrite.ID.unique(), data);
         alert('Friend request sent');
     } catch (error) {
         console.error('Error sending friend request:', error);
     }
 }
 
+// Fetch and display existing friends
+async function fetchFriends() {
+    try {
+        const currentUser = await account.get();
+        const friends = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+            Appwrite.Query.equal('accountId', currentUser.$id),
+            Appwrite.Query.equal('status', 'accepted')
+        ]);
 
-        // Fetch friend requests and add accept/reject buttons
-        async function fetchFriendRequests() {
-            try {
-                const accountId = 'your_account_id'; // Replace with logged-in user ID
-                
-                const requests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-                    Appwrite.Query.equal('friendId', accountId),
-                    Appwrite.Query.equal('status', 'pending')
-                ]);
-                
-                displayFriendRequests(requests.documents);
-            } catch (error) {
-                console.error('Error fetching friend requests:', error);
-            }
-        }
+        displayFriends(friends.documents);
+    } catch (error) {
+        console.error('Error fetching friends:', error);
+    }
+}
 
-        // Display pending friend requests with accept/reject options
-        function displayFriendRequests(requests) {
-            const resultsList = document.getElementById('searchResults'); // Reuse this list to display requests
-            resultsList.innerHTML = ''; // Clear previous requests
-            
-            requests.forEach(request => {
-                const li = document.createElement('li');
-                li.textContent = request.name;
+function displayFriends(friends) {
+    const friendList = document.getElementById('friendList');
+    friendList.innerHTML = '';
 
-                const acceptButton = document.createElement('button');
-                acceptButton.textContent = 'Accept';
-                acceptButton.onclick = () => updateFriendRequestStatus(request.$id, 'accepted');
-                
-                const rejectButton = document.createElement('button');
-                rejectButton.textContent = 'Reject';
-                rejectButton.onclick = () => updateFriendRequestStatus(request.$id, 'rejected');
-                
-                li.appendChild(acceptButton);
-                li.appendChild(rejectButton);
-                resultsList.appendChild(li);
-            });
-        }
+    friends.forEach(friend => {
+        const li = document.createElement('li');
+        li.textContent = friend.friendId; // You may want to fetch the friend's name from USERS_COLLECTION_ID
+        friendList.appendChild(li);
+    });
+}
 
-        // Accept or reject friend request
-        async function updateFriendRequestStatus(requestId, status) {
-            try {
-                await databases.updateDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, requestId, { status: status });
-                alert('Friend request ' + status);
-                fetchFriendRequests(); // Refresh requests after update
-            } catch (error) {
-                console.error('Error updating friend request:', error);
-            }
-        }
+window.onload = () => {
+    fetchFriends(); // Fetch friends on page load
+};
 
-        // Initialize when page loads
-        window.onload = () => {
-            fetchFriends(); // Fetch current friends
-            fetchFriendRequests(); // Fetch pending friend requests
-        };
     </script>
 </body>
 </html>
