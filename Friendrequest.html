@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Friends</title>
+    <title>Friend Requests</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
@@ -11,7 +11,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             background-color: #121212;
             color: #FFFFFF;
@@ -21,12 +21,16 @@
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-in-out;
+            max-width: 600px;
+            width: 100%;
         }
-        h1 {
+        h1, h2 {
             text-align: center;
             color: #57BB8A;
         }
         input[type="text"] {
+            width: 100%;
             margin-bottom: 1rem;
             padding: 0.5rem;
             border: 1px solid #3E3E3E;
@@ -43,10 +47,25 @@
             outline: none;
             box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
         }
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #57BB8A;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            margin-right: 0.5rem;
+        }
+        button:hover {
+            background-color: #399D6C;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
         ul {
             list-style: none;
             padding: 0;
-            margin-top: 1rem;
         }
         li {
             background-color: #2A2A2A;
@@ -57,147 +76,203 @@
             justify-content: space-between;
             align-items: center;
         }
-        button.addFriend {
-            background-color: #57BB8A;
-            color: white;
-            border: none;
-            padding: 0.3rem 0.5rem;
-            cursor: pointer;
-        }
-        button.addFriend:hover {
-            background-color: #399D6C;
-        }
-        .message {
-            margin-top: 1rem;
-            text-align: center;
-            opacity: 0;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Add Friends</h1>
-        <input type="text" id="friendSearch" placeholder="Search friends..." oninput="searchFriends()">
-        <ul id="searchResults"></ul>
-        <div id="notification" class="message"></div>
+        <h1>Friend Requests</h1>
+        <div class="friend-request-form">
+            <input type="text" id="friendSearch" placeholder="Search for friends...">
+            <button id="searchButton">Search</button>
+            <ul id="searchResults"></ul>
+        </div>
 
-        <!-- Existing friends list -->
-        <h2>Your Friends</h2>
-        <ul id="friendList"></ul>
+        <div class="friend-requests">
+            <h2>Pending Friend Requests</h2>
+            <ul id="friendRequests"></ul>
+        </div>
     </div>
 
+    <!-- Appwrite SDK -->
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
     <script>
         // Initialize Appwrite client
-// Initialize Appwrite client
-const client = new Appwrite.Client()
-    .setEndpoint('https://cloud.appwrite.io/v1')
-    .setProject('66f9c641001dbbd4bb66'); 
+        const client = new Appwrite.Client()
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
 
-const databases = new Appwrite.Databases(client);
-const account = new Appwrite.Account(client);
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
 
-const DATABASE_ID = '66f9e43e00253528c7a8'; 
-const USERS_COLLECTION_ID = '66f9e45d002562334094'; 
-const FRIENDS_COLLECTION_ID = '66fc597e0027848acf57'; 
+        const DATABASE_ID = '66f9e43e00253528c7a8';
+        const USERS_COLLECTION_ID = '66f9e45d002562334094';
+        const FRIENDS_COLLECTION_ID = '66fc597e0027848acf57';
 
-// Function to search friends
-async function searchFriends() {
-    const query = document.getElementById('friendSearch').value;
-    if (!query) {
-        document.getElementById('searchResults').innerHTML = '';
-        return;
-    }
+        let currentUserId;
 
-    try {
-        const currentUser = await account.get(); // Get current logged-in user
+        // Fetch and display friend requests
+        async function fetchFriendRequests() {
+            try {
+                const requests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+                    Appwrite.Query.equal('friendId', currentUserId),
+                    Appwrite.Query.equal('status', 'pending')
+                ]);
+                
+                displayFriendRequests(requests.documents);
+            } catch (error) {
+                console.error('Error fetching friend requests:', error);
+            }
+        }
+
+        // Display friend requests with accept/reject buttons
+        function displayFriendRequests(requests) {
+            const requestsList = document.getElementById('friendRequests');
+            requestsList.innerHTML = '';
+            
+            requests.forEach(request => {
+                const li = document.createElement('li');
+                li.textContent = `Friend request from: ${request.userId}`;
+
+                const buttonContainer = document.createElement('div');
+
+                const acceptButton = document.createElement('button');
+                acceptButton.textContent = 'Accept';
+                acceptButton.onclick = () => updateFriendRequestStatus(request.$id, 'accepted');
+                
+                const rejectButton = document.createElement('button');
+                rejectButton.textContent = 'Reject';
+                rejectButton.onclick = () => updateFriendRequestStatus(request.$id, 'rejected');
+                
+                buttonContainer.appendChild(acceptButton);
+                buttonContainer.appendChild(rejectButton);
+                li.appendChild(buttonContainer);
+                requestsList.appendChild(li);
+            });
+        }
+
+        // Update friend request status
+        async function updateFriendRequestStatus(requestId, status) {
+            try {
+                await databases.updateDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, requestId, { status: status, updated_at: new Date().toISOString() });
+                alert(`Friend request ${status}`);
+                fetchFriendRequests();
+            } catch (error) {
+                console.error('Error updating friend request:', error);
+            }
+        }
+
+        // Search for friends
+        document.getElementById('friendSearch').addEventListener('input', async (event) => {
+        const query = event.target.value;
         
-        // Fetch friends to exclude them from search results
-        const friends = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-            Appwrite.Query.equal('accountId', currentUser.$id)
-        ]);
-        const friendIds = friends.documents.map(friend => friend.friendId);
+        if (query) {
+            try {
+                // Clear the search results first to avoid duplicates
+                const resultsList = document.getElementById('searchResults');
+                resultsList.innerHTML = '';
 
-        // Query the Users collection for matching friends, exclude current user and already added friends
-        const results = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
-            Appwrite.Query.search('name', query),
-            Appwrite.Query.notEqual('accountId', currentUser.$id),   // Exclude current user
-            ...friendIds.map(id => Appwrite.Query.notEqual('accountId', id)) // Exclude already added friends
-        ]);
-
-        displaySearchResults(results.documents);
-    } catch (error) {
-        console.error('Error fetching search results:', error);
-    }
-}
-
-// Display search results
-function displaySearchResults(users) {
-    const resultsList = document.getElementById('searchResults');
-    resultsList.innerHTML = '';
-
-    users.forEach(user => {
-        const li = document.createElement('li');
-        li.textContent = user.name;
-
-        const addButton = document.createElement('button');
-        addButton.textContent = 'Add Friend';
-        addButton.classList.add('addFriend');
-        addButton.onclick = () => sendFriendRequest(user.accountId); // Use accountId
-
-        li.appendChild(addButton);
-        resultsList.appendChild(li);
+                const results = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+                    Appwrite.Query.search('name', query)
+                ]);
+                
+                await displaySearchResults(results.documents);
+            } catch (error) {
+                console.error('Error fetching search results:', error);
+            }
+        }
     });
-}
 
-// Send friend request
-async function sendFriendRequest(friendId) {
-    try {
-        const currentUser = await account.get();
-        const data = {
-            accountId: currentUser.$id,
-            friendId: friendId,
-            status: 'pending'
+        // Fetch existing friend requests
+        async function fetchExistingRequests() {
+            try {
+                const requests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+                    Appwrite.Query.equal('userId', currentUserId),
+                    Appwrite.Query.equal('status', 'pending')
+                ]);
+                return requests.documents.map(req => req.friendId);
+            } catch (error) {
+                console.error('Error fetching existing requests:', error);
+                return [];
+            }
+        }
+
+        // Display search results
+        async function displaySearchResults(users) {
+        const resultsList = document.getElementById('searchResults');
+        resultsList.innerHTML = '';
+        
+        // Fetch existing friend requests
+        const existingRequests = await fetchExistingRequests();
+        
+        users.forEach(user => {
+            if (user.accountId !== currentUserId) {
+                const li = document.createElement('li');
+                li.textContent = user.name;
+
+                const sendRequestButton = document.createElement('button');
+                sendRequestButton.textContent = 'Send Friend Request';
+                
+                // Check if there's an existing request for this user
+                if (existingRequests.includes(user.$id)) {
+                    sendRequestButton.disabled = true;
+                    sendRequestButton.textContent = 'Request Pending';
+                } else {
+                    sendRequestButton.onclick = () => sendFriendRequest(user.accountId, sendRequestButton);  // Pass the button
+                }
+                
+                li.appendChild(sendRequestButton);
+                resultsList.appendChild(li);
+            }
+        });
+    }
+
+        // Send friend request
+        async function sendFriendRequest(friendId, button) {  // Accept the button to disable it later
+            console.log('Sending friend request to:', friendId);
+            console.log('Current user ID:', currentUserId);
+            try {
+                const data = {
+                    userId: currentUserId,
+                    friendId: friendId,
+                    status: 'pending',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                const response = await databases.createDocument(
+                    DATABASE_ID, 
+                    FRIENDS_COLLECTION_ID, 
+                    Appwrite.ID.unique(),  // Generate a unique ID for the document
+                    data  // Pass the data object as the fourth argument
+                );
+                
+                console.log('Friend request sent successfully:', response);
+
+                // Disable the button and update text
+                button.disabled = true;
+                button.textContent = 'Request Sent';
+            } catch (error) {
+                console.error('Error sending friend request:', error);
+            }
+        }
+
+        // Initialize when page loads
+        window.onload = async () => {
+            try {
+                const user = await account.get();
+                currentUserId = user.$id;  // Use Appwrite's $id
+                fetchFriendRequests();
+            } catch (error) {
+                console.error('Error getting current user:', error);
+                alert('Please log in to use this feature.');
+                // Here you might want to redirect to a login page or show a login form
+                window.location.href = '/login.html';
+            }
         };
-
-        // Use Appwrite.ID.unique() to generate a unique ID for the document
-        await databases.createDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, Appwrite.ID.unique(), data);
-        alert('Friend request sent');
-    } catch (error) {
-        console.error('Error sending friend request:', error);
-    }
-}
-
-// Fetch and display existing friends
-async function fetchFriends() {
-    try {
-        const currentUser = await account.get();
-        const friends = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-            Appwrite.Query.equal('accountId', currentUser.$id),
-            Appwrite.Query.equal('status', 'accepted')
-        ]);
-
-        displayFriends(friends.documents);
-    } catch (error) {
-        console.error('Error fetching friends:', error);
-    }
-}
-
-function displayFriends(friends) {
-    const friendList = document.getElementById('friendList');
-    friendList.innerHTML = '';
-
-    friends.forEach(friend => {
-        const li = document.createElement('li');
-        li.textContent = friend.friendId; // You may want to fetch the friend's name from USERS_COLLECTION_ID
-        friendList.appendChild(li);
-    });
-}
-
-window.onload = () => {
-    fetchFriends(); // Fetch friends on page load
-};
-
     </script>
 </body>
 </html>
