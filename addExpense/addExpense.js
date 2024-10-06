@@ -12,6 +12,7 @@ const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
 const USERS_COLLECTION_ID = "66f9e45d002562334094";
 const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
 const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
+const TRANSACTION_COLLECTION_ID = "6702d327003c89118e37";
 
 let allFriends = [];
 let selectedFriends = [];
@@ -207,6 +208,40 @@ function handleSplitChange(friendId, value) {
     splits[friendId] = value;
 }
 
+async function performTransaction(activityId, payer, splits) {
+    try {
+        // Get the URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('groupId');
+
+        for (const friendId of Object.keys(splits)) {
+            // Create transaction object
+            const transactionData = {
+                payerId: payer,
+                receiverId: friendId,
+                amount: parseFloat(splits[friendId]),
+                time: new Date().toISOString(),
+                status: 'pending',
+                groupId: groupId,
+                activityId: activityId
+            };
+
+            // Create transaction
+            const response = await databases.createDocument(
+                DATABASE_ID, 
+                TRANSACTION_COLLECTION_ID, 
+                Appwrite.ID.unique(), 
+                transactionData
+            );
+            console.log('Transaction created:', response);
+        }
+
+        console.log('All transactions created successfully');
+    } catch (error) {
+        console.error('Error performing transaction:', error);
+    }
+}
+
 async function sendDataToDatabase(formData) {
     // get the url perameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -225,6 +260,14 @@ async function sendDataToDatabase(formData) {
             expense_category: formData.category || null
         };
         const response = await databases.createDocument(DATABASE_ID, ACTIVITIES_COLLECTION_ID, Appwrite.ID.unique(), dbData);
+
+        // Perform transaction
+        await performTransaction(
+            activityId=response.$id,
+            payer=formData.payer,
+            splits=formData.splits
+        );
+
         console.log('Data sent to database:', response);
         alert('Expense added successfully!');
     } catch (error) {
