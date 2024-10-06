@@ -11,6 +11,7 @@ const DATABASE_ID = "66f9e43e00253528c7a8";
 const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
 const USERS_COLLECTION_ID = "66f9e45d002562334094";
 const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
 
 let allFriends = [];
 let selectedFriends = [];
@@ -40,17 +41,59 @@ async function fetchFriendsDetails(friends) {
     }
 }
 
+async function fetchGroupMembersDetails(groupMembers) {
+    try {
+        const memberIds = groupMembers.map(member => member.memberId);
+        const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+            Appwrite.Query.equal("accountId", memberIds)
+        ]);
+        return response.documents;
+    } catch (error) {
+        console.error('Error fetching group members:', error);
+    }
+}
+
 async function fetchFriends() {
     try {
+        // get the url perameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const isGroup = urlParams.get('isGroup');
+        const isFriend = urlParams.get('isFriend');
+
+        // Get the current user
         const user = await account.get();
         const currentUserId = user.$id;
-        const response = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-            Appwrite.Query.equal('userId', currentUserId),
-            Appwrite.Query.equal('status', 'accepted')
-        ]);
-        const friends = await fetchFriendsDetails(response.documents);
-        allFriends = friends.map(friend => ({ accountId: friend.accountId, name: friend.name }));
-        allFriends.push({ accountId: currentUserId, name: user.name });
+
+        if (isGroup === 'false' && isFriend === 'true') {
+            // Fetch friends
+            const response = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+                Appwrite.Query.equal('userId', currentUserId),
+                Appwrite.Query.equal('status', 'accepted')
+            ]);
+
+            const friends = await fetchFriendsDetails(response.documents);
+
+            allFriends = friends.map(friend => ({ accountId: friend.accountId, name: friend.name }));
+            allFriends.push({ accountId: currentUserId, name: user.name });
+
+        } else if (isGroup === 'true' && isFriend === 'false') {
+            // Fetch group members
+            const groupId = urlParams.get('groupId');
+            const response = await databases.listDocuments(DATABASE_ID, GROUP_MEMBERS_COLLECTION_ID, [
+                Appwrite.Query.equal('groupid', groupId)
+            ]);
+
+            const groupMembers = await fetchGroupMembersDetails(response.documents);
+
+            allFriends = groupMembers.map(member => ({ accountId: member.accountId, name: member.name }));
+            allFriends.push({ accountId: currentUserId, name: user.name });
+
+        } else {
+            alert('Invalid URL parameters. Please try again.');
+            window.location.href = '/'
+        }
+
+        // Populate payer dropdown
         populatePayerDropdown();
     } catch (error) {
         console.error('Error fetching friends:', error);
@@ -165,12 +208,16 @@ function handleSplitChange(friendId, value) {
 }
 
 async function sendDataToDatabase(formData) {
+    // get the url perameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const groupId = urlParams.get('groupId');
+
     try {
         formData.splitMembers = Object.entries(formData.splits).map(([key, value]) => `${key}$$${value}`).join('##');
         const dbData = {
             description: formData.description,
             paidById: formData.payer,
-            groupId: formData.groupId || null,
+            groupId: groupId,
             time: new Date(formData.date).toISOString(),
             amount: parseFloat(formData.amount),
             splitMembers: formData.splitMembers,
