@@ -1,0 +1,175 @@
+body {
+    font-family: 'Open Sans', Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #121212;
+    color: #FFFFFF;
+}
+
+.container {
+    background-color: #1E1E1E;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.5s ease-in-out;
+    max-width: 600px;
+    width: 100%;
+}
+
+h1,
+h2 {
+    text-align: center;
+    color: #57BB8A;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    border: 1px solid #3E3E3E;
+    border-radius: 4px;
+    background-color: #2A2A2A;
+    color: #FFFFFF;
+    transition: all 0.3s ease;
+}
+
+input::placeholder {
+    color: #AAAAAA;
+}
+
+input:focus,
+select:focus {
+    border-color: #57BB8A;
+    outline: none;
+    box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
+}
+
+button {
+    padding: 0.5rem 1rem;
+    background-color: #57BB8A;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    margin-right: 0.5rem;
+    width: 100%;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #399D6C;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+.friend-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.friend-chip {
+    background-color: #57BB8A;
+    color: #1E1E1E;
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+    font-size: 0.85rem;
+    max-width: calc(50% - 5px);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.friend-chip:hover {
+    transform: scale(1.05);
+}
+
+.friend-chip button {
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    cursor: pointer;
+    margin-left: 5px;
+    font-size: 1rem;
+    padding: 0;
+    width: auto;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.friend-chip button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+}
+
+.friend-search {
+    position: relative;
+}
+
+.friend-list {
+    position: absolute;
+    width: 100%;
+    background-color: #2A2A2A;
+    border: 1px solid #3E3E3E;
+    border-radius: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.friend-item {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.friend-item:hover {
+    background-color: #3E3E3E;
+}
+
+.split-inputs {
+    margin-top: 15px;
+}
+
+.split-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.split-input span {
+    width: 30%;
+}
+
+.split-input input {
+    width: 70%;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

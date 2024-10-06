@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Form</title>
+    <link rel="stylesheet" href="/addExpense/style.css">
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Add an Expense</h2>
+        </div>
+        <form id="expenseForm">
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" id="amount" required placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <input type="text" id="description" required placeholder="Enter expense description">
+            </div>
+            <div class="form-group">
+                <label for="category">Category</label>
+                <input type="text" id="category" placeholder="Select Category" readonly onclick="openCategoryModal()" required />
+            </div>
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label for="payer">Paid by</label>
+                <select id="payer" required>
+                    <option value="">Select payer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Split with</label>
+                <div id="selectedFriends" class="friend-chips"></div>
+                <div class="friend-search">
+                    <input type="text" id="friendSearch" placeholder="Search friends">
+                    <div id="friendList" class="friend-list" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="splitMethod">Split method</label>
+                <select id="splitMethod">
+                    <option value="equal">Split equally</option>
+                    <option value="percentages">By percentages</option>
+                    <option value="shares">By shares</option>
+                    <option value="exact">Exact amounts</option>
+                </select>
+            </div>
+            <div id="splitInputs" class="split-inputs"></div>
+            <button type="submit">Add Expense</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
+    <script src="/addExpense/addExpense.js"></script>
+</body>
+
+</html>

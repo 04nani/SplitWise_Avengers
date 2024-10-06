@@ -134,7 +134,7 @@
             <i class="fas fa-users"></i>
             Groups
         </a>
-        <a href="category.html" onclick="addExpense('addExpense')">
+        <a href="#" onclick="addExpense('addExpense')">
             <i class="fas fa-plus-circle"></i>
             Add
         </a>
@@ -145,10 +145,6 @@
         <a href="profile.html" onclick="navigate('account')">
             <i class="fas fa-user-circle"></i>
             Account
-        </a>
-        <a href="#" class ="active" onclick="navigate('friends')">
-            <i class= "fas fa-user-friends"></i>
-            Friends
         </a>
     </div>
 
@@ -181,7 +177,7 @@
         }
 
         function addExpense() {
-            alert('Add Expense clicked');
+            window.location.href = '/addExpense/addExpense.html';
         }
 
         function redirectToFriends(){
