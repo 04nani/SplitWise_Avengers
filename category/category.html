@@ -158,7 +158,6 @@
             try {
                 const categories = await databases.listDocuments(DATABASE_ID, CATEGORY_COLLECTION_ID, [
                     Appwrite.Query.equal('creatorId', currentUserId),
-                    Appwrite.Query.equal('groupId', groupId),
                 ]);
                 
                 displayCategories(categories.documents);
