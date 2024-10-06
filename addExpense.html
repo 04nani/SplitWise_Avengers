@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Form</title>
+    <style>
+        body {
+            font-family: 'Open Sans', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #121212;
+            color: #FFFFFF;
+        }
+
+        .container {
+            background-color: #1E1E1E;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-in-out;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #57BB8A;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #3E3E3E;
+            border-radius: 4px;
+            background-color: #2A2A2A;
+            color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: #AAAAAA;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #57BB8A;
+            outline: none;
+            box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #57BB8A;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            margin-right: 0.5rem;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #399D6C;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .friend-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .friend-chip {
+            background-color: #57BB8A;
+            color: #1E1E1E;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+            font-size: 0.85rem;
+            max-width: calc(50% - 5px);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .friend-chip:hover {
+            transform: scale(1.05);
+        }
+
+        .friend-chip button {
+            background: none;
+            border: none;
+            color: #FFFFFF;
+            cursor: pointer;
+            margin-left: 5px;
+            font-size: 1rem;
+            padding: 0;
+            width: auto;
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .friend-chip button:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+        }
+
+        .friend-search {
+            position: relative;
+        }
+
+        .friend-list {
+            position: absolute;
+            width: 100%;
+            background-color: #2A2A2A;
+            border: 1px solid #3E3E3E;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .friend-item {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .friend-item:hover {
+            background-color: #3E3E3E;
+        }
+
+        .split-inputs {
+            margin-top: 15px;
+        }
+
+        .split-input {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .split-input span {
+            width: 30%;
+        }
+
+        .split-input input {
+            width: 70%;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Add an Expense</h2>
+        </div>
+        <form id="expenseForm">
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" id="amount" required placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <input type="text" id="description" required placeholder="Enter expense description">
+            </div>
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label for="payer">Paid by</label>
+                <select id="payer" required>
+                    <option value="">Select payer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Split with</label>
+                <div id="selectedFriends" class="friend-chips"></div>
+                <div class="friend-search">
+                    <input type="text" id="friendSearch" placeholder="Search friends">
+                    <div id="friendList" class="friend-list" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="splitMethod">Split method</label>
+                <select id="splitMethod">
+                    <option value="equal">Split equally</option>
+                    <option value="percentages">By percentages</option>
+                    <option value="shares">By shares</option>
+                    <option value="exact">Exact amounts</option>
+                </select>
+            </div>
+            <div id="splitInputs" class="split-inputs"></div>
+            <button type="submit">Add Expense</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
+    <script>
+        // Appwrite configuration
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+
+        let allFriends = [];
+        let selectedFriends = [];
+        let splits = {};
+
+        // DOM elements
+        const amountInput = document.getElementById('amount');
+        const descriptionInput = document.getElementById('description');
+        const dateInput = document.getElementById('date');
+        const payerSelect = document.getElementById('payer');
+        const friendSearchInput = document.getElementById('friendSearch');
+        const friendList = document.getElementById('friendList');
+        const selectedFriendsContainer = document.getElementById('selectedFriends');
+        const splitMethodSelect = document.getElementById('splitMethod');
+        const splitInputsContainer = document.getElementById('splitInputs');
+        const form = document.getElementById('expenseForm');
+
+        async function fetchFriendsDetails(friends) {
+            try {
+                const friendIds = friends.map(friend => friend.friendId);
+                const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+                    Appwrite.Query.equal("accountId", friendIds)
+                ]);
+                return response.documents;
+            } catch (error) {
+                console.error('Error fetching friends:', error);
+            }
+        }
+
+        async function fetchFriends() {
+            try {
+                const user = await account.get();
+                const currentUserId = user.$id;
+                const response = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+                    Appwrite.Query.equal('userId', currentUserId),
+                    Appwrite.Query.equal('status', 'accepted')
+                ]);
+                const friends = await fetchFriendsDetails(response.documents);
+                allFriends = friends.map(friend => ({ accountId: friend.accountId, name: friend.name }));
+                allFriends.push({ accountId: currentUserId, name: user.name });
+                populatePayerDropdown();
+            } catch (error) {
+                console.error('Error fetching friends:', error);
+            }
+        }
+
+        function populatePayerDropdown() {
+            payerSelect.innerHTML = '<option value="">Select payer</option>';
+            allFriends.forEach(friend => {
+                const option = document.createElement('option');
+                option.value = friend.accountId;
+                option.textContent = friend.name;
+                payerSelect.appendChild(option);
+            });
+        }
+
+        friendSearchInput.addEventListener('input', () => {
+            const searchTerm = friendSearchInput.value.toLowerCase();
+            const filteredFriends = allFriends.filter(friend =>
+                friend.name.toLowerCase().includes(searchTerm) &&
+                !selectedFriends.some(selected => selected.accountId === friend.accountId)
+            );
+            friendList.innerHTML = '';
+            filteredFriends.forEach(friend => {
+                const friendItem = document.createElement('div');
+                friendItem.className = 'friend-item';
+                friendItem.textContent = friend.name;
+                friendItem.addEventListener('click', () => addFriend(friend));
+                friendList.appendChild(friendItem);
+            });
+            friendList.style.display = filteredFriends.length > 0 ? 'block' : 'none';
+        });
+
+        function addFriend(friend) {
+            selectedFriends.push(friend);
+            friendSearchInput.value = '';
+            friendList.style.display = 'none';
+            updateSelectedFriends();
+            updateSplits();
+        }
+
+        function removeFriend(friendId) {
+            selectedFriends = selectedFriends.filter(f => f.accountId !== friendId);
+            delete splits[friendId];
+            updateSelectedFriends();
+            updateSplits();
+        }
+
+        function updateSelectedFriends() {
+            selectedFriendsContainer.innerHTML = '';
+            selectedFriends.forEach(friend => {
+                const chip = document.createElement('div');
+                chip.className = 'friend-chip';
+                chip.innerHTML = `
+            ${friend.name}
+            <button type="button" onclick="removeFriend('${friend.accountId}')">&times;</button>
+        `;
+                selectedFriendsContainer.appendChild(chip);
+            });
+        }
+
+        function updateSplits() {
+            const amount = parseFloat(amountInput.value) || 0;
+            const splitMethod = splitMethodSelect.value;
+            const numFriends = selectedFriends.length;
+
+            if (numFriends === 0) {
+                splitInputsContainer.innerHTML = '';
+                return;
+            }
+
+            splits = {};
+            selectedFriends.forEach(friend => {
+                switch (splitMethod) {
+                    case 'equal':
+                        splits[friend.accountId] = (amount / numFriends).toFixed(2);
+                        break;
+                    case 'percentages':
+                        splits[friend.accountId] = splits[friend.accountId] || (100 / numFriends).toFixed(2);
+                        break;
+                    case 'shares':
+                        splits[friend.accountId] = splits[friend.accountId] || '1';
+                        break;
+                    case 'exact':
+                        splits[friend.accountId] = splits[friend.accountId] || (amount / numFriends).toFixed(2);
+                        break;
+                }
+            });
+
+            renderSplitInputs();
+        }
+
+        function renderSplitInputs() {
+            splitInputsContainer.innerHTML = '';
+            selectedFriends.forEach(friend => {
+                const inputContainer = document.createElement('div');
+                inputContainer.className = 'split-input';
+                inputContainer.innerHTML = `
+            <span>${friend.name}</span>
+            <input type="${splitMethodSelect.value === 'percentages' ? 'number' : 'text'}"
+                   value="${splits[friend.accountId]}"
+                   onchange="handleSplitChange('${friend.accountId}', this.value)"
+                   placeholder="${splitMethodSelect.value === 'percentages' ? 'Percentage' : splitMethodSelect.value === 'shares' ? 'Shares' : 'Amount'}">
+            ${splitMethodSelect.value === 'percentages' ? '<span>%</span>' : ''}
+        `;
+                splitInputsContainer.appendChild(inputContainer);
+            });
+        }
+
+        function handleSplitChange(friendId, value) {
+            splits[friendId] = value;
+        }
+
+        async function sendDataToDatabase(formData) {
+            try {
+                formData.splitMembers = Object.entries(formData.splits).map(([key, value]) => `${key}$$${value}`).join('##');
+                const dbData = {
+                    description: formData.description,
+                    paidById: formData.payer,
+                    groupId: formData.groupId || null,
+                    time: new Date(formData.date).toISOString(),
+                    amount: parseFloat(formData.amount),
+                    splitMembers: formData.splitMembers,
+                    user_involvement: true,
+                    expense_category: formData.category || null
+                };
+                const response = await databases.createDocument(DATABASE_ID, ACTIVITIES_COLLECTION_ID, Appwrite.ID.unique(), dbData);
+                console.log('Data sent to database:', response);
+                alert('Expense added successfully!');
+            } catch (error) {
+                console.error('Error sending data to database:', error);
+                alert('Error adding expense. Please try again.');
+            }
+        }
+
+        amountInput.addEventListener('input', updateSplits);
+        splitMethodSelect.addEventListener('change', updateSplits);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                amount: amountInput.value,
+                description: descriptionInput.value,
+                date: dateInput.value,
+                payer: payerSelect.value,
+                splitMethod: splitMethodSelect.value,
+                splits: splits
+            };
+            console.log('Form submitted:', formData);
+            await sendDataToDatabase(formData);
+        });
+
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+
+        // Initialize the application
+        fetchFriends();
+    </script>
+</body>
+
+</html>
