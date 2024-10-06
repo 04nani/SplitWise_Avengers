@@ -142,7 +142,7 @@
             <i class="fas fa-list"></i>
             Activity
         </a>
-        <a href="profile.html" onclick="navigate('account')">
+        <a href="#" onclick="redirectToProfile()">
             <i class="fas fa-user-circle"></i>
             Account
         </a>
@@ -178,6 +178,10 @@
 
         function addExpense() {
             window.location.href = '/addExpense/home.html';
+        }
+
+        function redirectToProfile(){
+            window.location.href = 'profile.html';
         }
 
         function redirectToFriends(){
