@@ -162,6 +162,53 @@ button:active {
     width: 70%;
 }
 
+.category-autocomplete {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+#categoryInput {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #3E3E3E;
+    border-radius: 4px;
+    background-color: #2A2A2A;
+    color: #FFFFFF;
+    transition: all 0.3s ease;
+}
+
+#categoryInput:focus {
+    border-color: #57BB8A;
+    outline: none;
+    box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
+}
+
+.category-list {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #2A2A2A;
+    border: 1px solid #3E3E3E;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    z-index: 1000;
+    display: none;
+}
+
+.category-list li {
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.category-list li:hover {
+    background-color: #3E3E3E;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

@@ -13,10 +13,13 @@ const USERS_COLLECTION_ID = "66f9e45d002562334094";
 const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
 const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
 const TRANSACTION_COLLECTION_ID = "6702d327003c89118e37";
+const CATEGORY_COLLECTION_ID = "66fc56ec0001a77931b0";
 
 let allFriends = [];
 let selectedFriends = [];
 let splits = {};
+let categories = [];
+let selectedCategoryId = null;
 
 // DOM elements
 const amountInput = document.getElementById('amount');
@@ -29,6 +32,83 @@ const selectedFriendsContainer = document.getElementById('selectedFriends');
 const splitMethodSelect = document.getElementById('splitMethod');
 const splitInputsContainer = document.getElementById('splitInputs');
 const form = document.getElementById('expenseForm');
+const categoryInput = document.getElementById('categoryInput');
+const categoryList = document.getElementById('categoryList');
+
+async function fetchCategories() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isGroup = urlParams.get('isGroup');
+        const isFriend = urlParams.get('isFriend');
+        const groupId = urlParams.get('groupId');
+
+        let query = [];
+
+        if (isGroup === 'false' && isFriend === 'true') {
+            const user = await account.get();
+            query.push(Appwrite.Query.equal("creatorId", user.$id));
+        } else if (isGroup === 'true' && isFriend === 'false' && groupId !== null) {
+            query.push(Appwrite.Query.equal("groupId", groupId));
+        } else {
+            throw new Error('Invalid URL parameters');
+        }
+
+        const response = await databases.listDocuments(DATABASE_ID, CATEGORY_COLLECTION_ID, query);
+        categories = response.documents;
+        console.log('Categories fetched:', categories);
+        setupCategoryAutocomplete();
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+        categories = [];
+        categoryInput.disabled = true;
+        categoryInput.placeholder = 'Categories unavailable';
+    }
+}
+
+function setupCategoryAutocomplete() {
+    categoryInput.addEventListener('input', filterCategories);
+    categoryInput.addEventListener('focus', () => displayCategoryList(categories));
+    document.addEventListener('click', (e) => {
+        if (!categoryInput.contains(e.target) && !categoryList.contains(e.target)) {
+            hideCategoryList();
+        }
+    });
+}
+
+function filterCategories() {
+    const searchTerm = categoryInput.value.toLowerCase();
+    const filteredCategories = categories.filter(category =>
+        category.categoryName.toLowerCase().includes(searchTerm)
+    );
+    displayCategoryList(filteredCategories);
+}
+
+function displayCategoryList(categoriesToShow) {
+    categoryList.innerHTML = '';
+    if (categoriesToShow.length === 0) {
+        hideCategoryList();
+        return;
+    }
+    categoriesToShow.forEach(category => {
+        console.log(category);
+        const li = document.createElement('li');
+        li.textContent = category.categoryName;
+        li.addEventListener('click', () => selectCategory(category));
+        categoryList.appendChild(li);
+    });
+    categoryList.style.display = 'block';
+}
+
+
+function selectCategory(category) {
+    categoryInput.value = category.categoryName;
+    selectedCategoryId = category.$id;
+    hideCategoryList();
+}
+
+function hideCategoryList() {
+    categoryList.style.display = 'none';
+}
 
 async function fetchFriendsDetails(friends) {
     try {
@@ -228,9 +308,9 @@ async function performTransaction(activityId, payer, splits) {
 
             // Create transaction
             const response = await databases.createDocument(
-                DATABASE_ID, 
-                TRANSACTION_COLLECTION_ID, 
-                Appwrite.ID.unique(), 
+                DATABASE_ID,
+                TRANSACTION_COLLECTION_ID,
+                Appwrite.ID.unique(),
                 transactionData
             );
             console.log('Transaction created:', response);
@@ -257,15 +337,15 @@ async function sendDataToDatabase(formData) {
             amount: parseFloat(formData.amount),
             splitMembers: formData.splitMembers,
             user_involvement: true,
-            expense_category: formData.category || null
+            expense_category: formData.categoryId
         };
         const response = await databases.createDocument(DATABASE_ID, ACTIVITIES_COLLECTION_ID, Appwrite.ID.unique(), dbData);
 
         // Perform transaction
         await performTransaction(
-            activityId=response.$id,
-            payer=formData.payer,
-            splits=formData.splits
+            activityId = response.$id,
+            payer = formData.payer,
+            splits = formData.splits
         );
 
         console.log('Data sent to database:', response);
@@ -287,7 +367,8 @@ form.addEventListener('submit', async (e) => {
         date: dateInput.value,
         payer: payerSelect.value,
         splitMethod: splitMethodSelect.value,
-        splits: splits
+        splits: splits,
+        categoryId: selectedCategoryId
     };
     console.log('Form submitted:', formData);
     await sendDataToDatabase(formData);
@@ -299,3 +380,4 @@ dateInput.value = today;
 
 // Initialize the application
 fetchFriends();
+fetchCategories();

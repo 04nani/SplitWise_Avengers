@@ -24,7 +24,10 @@
             </div>
             <div class="form-group">
                 <label for="category">Category</label>
-                <input type="text" id="category" placeholder="Select Category" readonly onclick="openCategoryModal()" required />
+                <div class="category-autocomplete">
+                    <input type="text" id="categoryInput" placeholder="Select or search category">
+                    <ul id="categoryList" class="category-list" style="display: none;"></ul>
+                </div>
             </div>
             <div class="form-group">
                 <label for="date">Date</label>
