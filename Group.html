@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +17,7 @@
             background-color: #121212;
             color: #FFFFFF;
         }
+
         .container {
             background-color: #1E1E1E;
             padding: 2rem;
@@ -23,33 +25,43 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             animation: fadeIn 0.5s ease-in-out;
         }
+
         h1 {
             text-align: center;
             color: #57BB8A;
         }
+
         form {
             display: flex;
             flex-direction: column;
         }
-        input, textarea {
+
+        input,
+        textarea {
             margin-bottom: 1rem;
-            padding: 0.5rem;
+            padding: 0.75rem;
             border: 1px solid #3E3E3E;
             border-radius: 4px;
             background-color: #2A2A2A;
             color: #FFFFFF;
             transition: all 0.3s ease;
+            width: 100%;
         }
-        input::placeholder, textarea::placeholder {
+
+        input::placeholder,
+        textarea::placeholder {
             color: #AAAAAA;
         }
-        input:focus, textarea:focus {
+
+        input:focus,
+        textarea:focus {
             border-color: #57BB8A;
             outline: none;
             box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
         }
+
         button {
-            padding: 0.5rem;
+            padding: 0.75rem;
             background-color: #57BB8A;
             color: white;
             border: none;
@@ -57,48 +69,284 @@
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.1s ease;
         }
+
         button:hover {
             background-color: #399D6C;
         }
+
         button:active {
             transform: scale(0.98);
         }
+
         ul {
             list-style: none;
             padding: 0;
         }
+
         li {
             background-color: #2A2A2A;
             padding: 0.5rem;
             border-radius: 4px;
             margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            /* border: 1px solid #3E3E3E; */
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #2A2A2A;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .autocomplete-items div:hover {
+            background-color: #3E3E3E;
+        }
+
+        .remove-btn {
+            background-color: #FF5C5C;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 0.3rem 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background-color: #D94C4C;
+        }
+
+        .selected-members {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .selected-member {
+            background-color: #3E3E3E;
+            padding: 0.5rem 1rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #FFFFFF;
+        }
+
+        .selected-member .remove-btn {
+            background-color: transparent;
+            border: none;
+            color: #FF5C5C;
+            cursor: pointer;
+        }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Create Group</h1>
         <form id="createGroupForm">
             <input type="text" id="groupName" placeholder="Group Name" required>
-            <textarea id="groupDescription" placeholder="Group Description" required></textarea>
             <button type="submit">Create Group</button>
         </form>
 
         <div class="members-section">
             <h2>Manage Group Members</h2>
-            <input type="text" id="addMemberInput" placeholder="Enter member ID">
-            <button id="addMemberButton">Add Member</button>
-
-            <h3>Current Members</h3>
-            <ul id="groupMembersList"></ul>
+            <div class="selected-members" id="selectedMembers"></div>
+            <div class="autocomplete-container">
+                <input type="text" id="addMemberInput" placeholder="Search and add friends">
+                <div id="friendsList" class="autocomplete-items"></div>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
-    <script src="app.js"></script>
+    <script>
+        // Appwrite configuration
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const GROUPS_COLLECTION_ID = "66ffed4e001b7299c97c";
+        const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
+
+        let currentUserId;
+        let friendsList = [];
+        let selectedFriends = new Set();
+
+        // Function to get the current user's ID
+        async function getCurrentUserId() {
+            try {
+                const user = await account.get();
+                return user.$id;
+            } catch (error) {
+                console.error("Error getting current user:", error);
+                return null;
+            }
+        }
+
+        // Function to fetch friends list
+        async function fetchFriendsList() {
+            try {
+                const response = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+                    Appwrite.Query.equal('userId', currentUserId),
+                    Appwrite.Query.equal('status', 'accepted')
+                ]);
+                return response.documents;
+            } catch (error) {
+                console.error("Error fetching friends list:", error);
+                return [];
+            }
+        }
+
+        // Function to fetch friends details
+        async function fetchFriendsDetails(friends) {
+            try {
+                const friendIds = friends.map(friend => friend.friendId);
+                if (friendIds.length === 0) return [];
+                const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+                    Appwrite.Query.equal("accountId", friendIds)
+                ]);
+                return response.documents;
+            } catch (error) {
+                console.error('Error fetching friends:', error);
+                return [];
+            }
+        }
+
+        // Function to display friends in the dropdown
+        function displayFriends(friends) {
+            const friendsListElement = document.getElementById('friendsList');
+            friendsListElement.innerHTML = '';
+            friends.forEach(friend => {
+                if (!selectedFriends.has(friend.friendId)) {
+                    const div = document.createElement('div');
+                    div.textContent = friend.name;
+                    div.addEventListener('click', () => addMember(friend));
+                    friendsListElement.appendChild(div);
+                }
+            });
+        }
+
+        // Function to add a member to the group
+        function addMember(friend) {
+            const selectedMembersElement = document.getElementById('selectedMembers');
+            const memberBubble = document.createElement('div');
+            memberBubble.className = 'selected-member';
+            memberBubble.textContent = friend.name;
+            memberBubble.setAttribute('data-account-id', friend.accountId);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-btn';
+            removeBtn.textContent = 'x';
+            removeBtn.addEventListener('click', () => {
+                memberBubble.remove();
+                selectedFriends.delete(friend.friendId);
+                displayFriends(friendsList);
+            });
+
+            memberBubble.appendChild(removeBtn);
+            selectedMembersElement.appendChild(memberBubble);
+
+            // Add friend to selected friends set
+            selectedFriends.add(friend.friendId);
+
+            // Clear the input and hide the dropdown
+            document.getElementById('addMemberInput').value = '';
+            document.getElementById('friendsList').innerHTML = '';
+        }
+
+        // Event listener for input changes
+        document.getElementById('addMemberInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredFriends = friendsList.filter(friend =>
+                friend.name.toLowerCase().includes(searchTerm)
+            );
+            displayFriends(filteredFriends);
+        });
+
+        // Event listener for form submission
+        document.getElementById('createGroupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const groupName = document.getElementById('groupName').value;
+            let members = Array.from(document.getElementById('selectedMembers').children).map(div => ({ name: div.firstChild.textContent, accountId: div.getAttribute('data-account-id') }));
+
+            // get current user
+            let user = await account.get();
+            members.push({ name: user.name, accountId: user.$id });
+
+            console.log('Members:', members);
+            console.log('groupName:', groupName);
+            try {
+                const response = await databases.createDocument(DATABASE_ID, GROUPS_COLLECTION_ID, Appwrite.ID.unique(), {
+                    groupName: groupName,
+                    creatorid: currentUserId,
+                });
+
+                members.forEach(async member => {
+                    await databases.createDocument(DATABASE_ID, GROUP_MEMBERS_COLLECTION_ID, Appwrite.ID.unique(), {
+                        groupid: response.$id,
+                        memberId: member.accountId,
+                        joined_at: new Date().toISOString()
+                    });
+                });
+
+                alert('Group created successfully!');
+            } catch (error) {
+                console.error('Error creating group:', error);
+                alert('Failed to create group. Please try again.');
+            }
+        });
+
+        // Initialize the page
+        async function init() {
+            currentUserId = await getCurrentUserId();
+            if (currentUserId) {
+                const friends = await fetchFriendsList();
+                friendsList = await fetchFriendsDetails(friends);
+                displayFriends(friendsList); // Display initial friends list
+            }
+        }
+
+        init();
+    </script>
 </body>
+
 </html>
