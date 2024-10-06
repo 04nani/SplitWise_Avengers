@@ -60,6 +60,7 @@ async function fetchFriends() {
         const urlParams = new URLSearchParams(window.location.search);
         const isGroup = urlParams.get('isGroup');
         const isFriend = urlParams.get('isFriend');
+        const groupId = urlParams.get('groupId');
 
         // Get the current user
         const user = await account.get();
@@ -77,7 +78,7 @@ async function fetchFriends() {
             allFriends = friends.map(friend => ({ accountId: friend.accountId, name: friend.name }));
             allFriends.push({ accountId: currentUserId, name: user.name });
 
-        } else if (isGroup === 'true' && isFriend === 'false') {
+        } else if (isGroup === 'true' && isFriend === 'false' && groupId !== null) {
             // Fetch group members
             const groupId = urlParams.get('groupId');
             const response = await databases.listDocuments(DATABASE_ID, GROUP_MEMBERS_COLLECTION_ID, [
@@ -87,7 +88,6 @@ async function fetchFriends() {
             const groupMembers = await fetchGroupMembersDetails(response.documents);
 
             allFriends = groupMembers.map(member => ({ accountId: member.accountId, name: member.name }));
-            allFriends.push({ accountId: currentUserId, name: user.name });
 
         } else {
             alert('Invalid URL parameters. Please try again.');

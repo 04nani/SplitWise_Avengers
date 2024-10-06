@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #121212;
+            color: #FFFFFF;
+        }
+
+        .container {
+            background-color: #1E1E1E;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-in-out;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #57BB8A;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #3E3E3E;
+            border-radius: 4px;
+            background-color: #2A2A2A;
+            color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: #AAAAAA;
+        }
+
+        input:focus {
+            border-color: #57BB8A;
+            outline: none;
+            box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #57BB8A;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            margin-right: 0.5rem;
+            width: 100%;
+            font-size: 16px;
+            margin-bottom: 1rem;
+        }
+
+        button:hover {
+            background-color: #399D6C;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #groupSearch {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #groupList {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+            background-color: #2A2A2A;
+            border: 1px solid #3E3E3E;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        #groupList li {
+            padding: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #groupList li:hover {
+            background-color: #3E3E3E;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Expense Tracker</h1>
+        <button id="groupButton">Add Expense for Group</button>
+        <button id="friendButton">Add Expense for Friends</button>
+
+        <div id="groupSearch">
+            <input type="text" id="searchInput" placeholder="Search groups...">
+            <ul id="groupList"></ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
+    <script>
+        // Appwrite configuration
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+        const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
+        const TRANSACTION_COLLECTION_ID = "6702d327003c89118e37";
+        const GROUP_COLLECTION_ID = "66ffed4e001b7299c97c";
+
+        let groups = [];
+        const groupList = document.getElementById('groupList');
+        const searchInput = document.getElementById('searchInput');
+        const groupSearch = document.getElementById('groupSearch');
+
+        async function getGroups() {
+            const user = await account.get();
+            const groupMembers = await databases.listDocuments(DATABASE_ID, GROUP_MEMBERS_COLLECTION_ID, [
+                Appwrite.Query.equal('memberId', user.$id)
+            ]);
+
+            return groupMembers.documents.map(groupMember => groupMember.groupid);
+        }
+
+        async function getGroupNames(groupIds) {
+            const groups = await databases.listDocuments(DATABASE_ID, GROUP_COLLECTION_ID, [
+                Appwrite.Query.equal('$id', groupIds)
+            ]);
+
+            return groups.documents.map(group => ({ name: group.groupName, id: group.$id }));
+        }
+
+        function populateGroups(filter = '') {
+            groupList.innerHTML = '';
+            groups.filter(group => group.name.toLowerCase().includes(filter.toLowerCase()))
+                .forEach(group => {
+                    const li = document.createElement('li');
+                    li.textContent = group.name;
+                    li.addEventListener('click', () => selectGroup(group.id));
+                    groupList.appendChild(li);
+                });
+        }
+
+        function selectGroup(groupId) {
+            window.location.href = `/addExpense/addExpense.html?isGroup=true&isFriend=false&groupId=${encodeURIComponent(groupId)}`;
+        }
+
+        document.getElementById('groupButton').addEventListener('click', async function () {
+            groupSearch.style.display = 'block';
+            const groupIds = await getGroups();
+            groups = await getGroupNames(groupIds);
+            populateGroups();
+        });
+
+        document.getElementById('friendButton').addEventListener('click', function () {
+            window.location.href = '/addExpense/addExpense.html?isGroup=false&isFriend=true';
+        });
+
+        searchInput.addEventListener('input', function () {
+            populateGroups(this.value);
+        });
+
+        populateGroups();
+    </script>
+</body>
+
+</html>
