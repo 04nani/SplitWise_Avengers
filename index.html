@@ -178,6 +178,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
     <script>
+        var userid="";
         const { Client, Account } = Appwrite;
 
         const client = new Client()
@@ -190,6 +191,7 @@
         async function checkSession() {
             try {
                 const user = await account.get();
+                userid=user.$id;
                 console.log('User is logged in:', user);
             } catch (error) {
                 console.log('User is not logged in or session expired:', error);
@@ -201,20 +203,75 @@
         checkSession();
 
         function navigate(page) {
-            alert('Navigate to ' + page);
-        }
+            if(page=="friends"){
 
+  document.getElementsByClassName("title")[0].innerText="Friends List";
+  
+  const ulElement = document.querySelector('ul[role="list"].max-w-sm');
+
+// Remove all child elements from the <ul>
+while (ulElement.firstChild) {
+    ulElement.removeChild(ulElement.firstChild);
+}
+    getFriendsData();
+}
+else if (page=="groups"){
+
+    document.getElementsByClassName("title")[0].innerText="Groups List";
+
+    const ulElement = document.querySelector('ul[role="list"].max-w-sm');
+
+// Remove all child elements from the <ul>
+while (ulElement.firstChild) {
+    ulElement.removeChild(ulElement.firstChild);
+}
+    getGroups();
+}
+else{
+}
+        }
         function addExpense() {
             window.location.href = '/addExpense/home.html';
         }
-
         function redirectToProfile(){
             window.location.href = 'profile.html';
         }
-
         function redirectToFriends(){
             window.location.href = 'Friendrequest.html';
         }
     </script>
+    <script>
+    const message = document.getElementById('message');
+
+    async function verifyEmail() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('userId');
+        const secret = urlParams.get('secret');
+
+        if (!userId || !secret) {
+            message.textContent = 'Invalid verification link.';
+            message.className = 'message error-message';
+            return;
+        }
+
+        try {
+            await account.updateVerification(userId, secret);
+            message.textContent = 'Email verified successfully! You can now log in.';
+            message.className = 'message success-message';
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 3000);
+        } catch (error) {
+            console.error('Email verification failed', error);
+            message.textContent = 'Email verification failed: ' + error.message;
+            message.className = 'message error-message';
+        }
+    }
+
+    // Verify email when the page loads
+    verifyEmail();
+
+</script>
+<script src="pages.js"></script>
 </body>
 </html>
