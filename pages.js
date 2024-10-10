@@ -67,13 +67,13 @@ const getFriendsData = async () => {
             // Create <p> for name
             const nameParagraph = document.createElement("p");
             nameParagraph.className =
-              "text-sm font-semibold text-gray-900 truncate dark:text-white";
+              "text-sm font-semibold text-white truncate dark:text-white";
             nameParagraph.textContent = friends[0].name;
 
             // Create <p> for email
             const emailParagraph = document.createElement("p");
             emailParagraph.className =
-              "text-sm text-gray-500 truncate dark:text-gray-400";
+              "text-sm text-gray-400 truncate dark:text-gray-400";
             emailParagraph.textContent = friends[0].email;
 
             // Append name and email to the content container
@@ -198,13 +198,13 @@ const getGroups = async () => {
         // Create <p> for name
         const nameParagraph = document.createElement("p");
         nameParagraph.className =
-          "text-sm font-semibold text-gray-900 truncate dark:text-white";
+          "text-sm font-semibold text-white truncate";
         nameParagraph.textContent = friends[0]["groupName"];
 
         // Create <p> for email
         const emailParagraph = document.createElement("p");
         emailParagraph.className =
-          "text-sm text-gray-500 truncate dark:text-gray-400";
+          "text-sm text-gray-400 truncate dark:text-gray-400";
         emailParagraph.textContent = friends[0].email;
 
         // Append name and email to the content container
