@@ -139,7 +139,7 @@ const getGroups = async () => {
   try {
     const response = await databases.listDocuments(
       "66f9e43e00253528c7a8", // Replace with your database ID
-      "66ffef8e000e9a26e8bf", // Collection ID for 'FriendCollections'
+      "66ffed4e001b7299c97c", // Collection ID for 'FriendCollections'
       // Appwrite.Query.equal('$id', element.groupid),      // Filter by document ID
       [Appwrite.Query.equal("memberId", userid)]
     );
