@@ -7,7 +7,7 @@ const databases = new Appwrite.Databases(client);
 const getFriendsData = async () => {
   try {
     const response = await databases.listDocuments(
-      "66ffed4e001b7299c97c", // Replace with your database ID
+      "66f9e43e00253528c7a8", // Replace with your database ID
       "66fc597e0027848acf57" // Collection ID for 'FriendCollections'
     );
 
