@@ -185,9 +185,18 @@
         }
 
         // Search for friends
-        document.getElementById('friendSearch').addEventListener('input', async (event) => {
+        let debounceTimer;
+        const debounceSearch = (callback, delay) => {
+         clearTimeout(debounceTimer);
+         debounceTimer = setTimeout(callback, delay);
+        };
+
+        document.getElementById('friendSearch').addEventListener('input', (event) => {
         const query = event.target.value;
+        debounceSearch(() => performSearch(query), 300);
+        });
         
+        async function performSearch(query){
         if (query) {
             try {
                 // Clear the search results first to avoid duplicates
@@ -203,7 +212,7 @@
                 console.error('Error fetching search results:', error);
             }
         }
-    });
+    }
 
         // Fetch existing friend requests
         async function fetchExistingRequests() {
@@ -248,36 +257,59 @@
             }
         });
     }
-
         // Send friend request
-        async function sendFriendRequest(friendId, button) {  // Accept the button to disable it later
-            console.log('Sending friend request to:', friendId);
-            console.log('Current user ID:', currentUserId);
-            try {
-                const data = {
-                    userId: currentUserId,
-                    friendId: friendId,
-                    status: 'pending',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-
-                const response = await databases.createDocument(
-                    DATABASE_ID, 
-                    FRIENDS_COLLECTION_ID, 
-                    Appwrite.ID.unique(),  // Generate a unique ID for the document
-                    data  // Pass the data object as the fourth argument
-                );
-                
-                console.log('Friend request sent successfully:', response);
-
-                // Disable the button and update text
-                button.disabled = true;
-                button.textContent = 'Request Sent';
-            } catch (error) {
-                console.error('Error sending friend request:', error);
-            }
+async function sendFriendRequest(friendId, button) {
+    console.log('Sending friend request to:', friendId);
+    console.log('Current user ID:', currentUserId);
+    
+    try {
+        // Check if a friend request already exists (in both directions)
+        const existingRequests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+            Appwrite.Query.equal('userId', currentUserId),
+            Appwrite.Query.equal('friendId', friendId),
+            Appwrite.Query.equal('status', 'pending')
+        ]);
+        
+        const reverseRequests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+            Appwrite.Query.equal('userId', friendId),
+            Appwrite.Query.equal('friendId', currentUserId),
+            Appwrite.Query.equal('status', 'pending')
+        ]);
+        
+        // If a request already exists, disable the button and update the text
+        if (existingRequests.documents.length > 0 || reverseRequests.documents.length > 0) {
+            console.log('Friend request already exists.');
+            button.disabled = true;
+            button.textContent = 'Request Pending';
+            return;
         }
+
+        // If no request exists, create a new friend request
+        const data = {
+            userId: currentUserId,
+            friendId: friendId,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        const response = await databases.createDocument(
+            DATABASE_ID, 
+            FRIENDS_COLLECTION_ID, 
+            Appwrite.ID.unique(),  // Generate a unique ID for the document
+            data
+        );
+        
+        console.log('Friend request sent successfully:', response);
+
+        // Disable the button and update the text
+        button.disabled = true;
+        button.textContent = 'Request Sent';
+    } catch (error) {
+        console.error('Error sending friend request:', error);
+    }
+}
+
 
         // Initialize when page loads
         window.onload = async () => {
