@@ -87,7 +87,7 @@
             border-radius: 8px;
             animation: fadeIn 0.5s ease-in-out;
         }
-        .activity-item p {
+        .activity-item p {ca
             margin: 0;
         }
         .friend-button {
@@ -104,9 +104,7 @@
             z-index: 1001;
             transition: background-color 0.3s ease, transform 0.1s ease;
         }
-        .friend-button:hover {
-            background-color: #399D6C;
-        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -143,7 +141,10 @@
 </head>
 <body>
     
-    <button class="friend-button" onclick="redirectToFriends()">Add Friends</button>
+    <button class="friend-button" onclick="redirectToFriends()">
+        <i class="fas fa-user-plus"></i>
+    </button>
+    
 
     <!-- Content Area -->
     <div class="content">
