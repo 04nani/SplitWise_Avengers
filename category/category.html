@@ -38,8 +38,7 @@
             flex-direction: column;
         }
 
-        input,
-        textarea {
+        input {
             margin-bottom: 1rem;
             padding: 0.5rem;
             border: 1px solid #3E3E3E;
@@ -49,13 +48,11 @@
             transition: all 0.3s ease;
         }
 
-        input::placeholder,
-        textarea::placeholder {
+        input::placeholder {
             color: #AAAAAA;
         }
 
-        input:focus,
-        textarea:focus {
+        input:focus {
             border-color: #57BB8A;
             outline: none;
             box-shadow: 0 0 5px rgba(87, 187, 138, 0.5);
@@ -90,6 +87,37 @@
             padding: 0.5rem;
             border-radius: 4px;
             margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1E1E1E;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+            width: 300px;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 1rem;
+            color: #57BB8A;
+        }
+
+        .modal-content button {
+            margin-top: 1rem;
+            margin-right: 10px;
         }
 
         @keyframes fadeIn {
@@ -116,6 +144,16 @@
         <ul id="categoryList"></ul>
     </div>
 
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2>Edit or Delete Category</h2>
+            <button id="editBtn">Edit</button>
+            <button id="deleteBtn" style="background-color: #BB5757;">Delete</button>
+            <button id="closeModal" style="background-color: #3E3E3E;">Cancel</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
     <script>
         // Appwrite configuration
@@ -128,21 +166,18 @@
         const account = new Appwrite.Account(client);
 
         const DATABASE_ID = "66f9e43e00253528c7a8";
-        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
-        const USERS_COLLECTION_ID = "66f9e45d002562334094";
-        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
-        const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
-        const TRANSACTION_COLLECTION_ID = "6702d327003c89118e37";
         const CATEGORY_COLLECTION_ID = "66fc56ec0001a77931b0";
 
         let currentUserId;
         let groupId;
+        let selectedCategoryId;
+        let selectedCategoryName;
 
         async function init() {
             try {
                 const user = await account.get();
                 currentUserId = user.$id;
-                
+
                 // Get groupId from URL parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 groupId = urlParams.get('groupId');
@@ -159,7 +194,6 @@
                 const categories = await databases.listDocuments(DATABASE_ID, CATEGORY_COLLECTION_ID, [
                     Appwrite.Query.equal('creatorId', currentUserId),
                 ]);
-                
                 displayCategories(categories.documents);
             } catch (error) {
                 console.error("Error fetching categories:", error);
@@ -173,8 +207,21 @@
             categories.forEach(category => {
                 const li = document.createElement('li');
                 li.textContent = category.categoryName;
+                li.addEventListener('click', () => {
+                    openModal(category.$id, category.categoryName);
+                });
                 categoryList.appendChild(li);
             });
+        }
+
+        function openModal(categoryId, categoryName) {
+            selectedCategoryId = categoryId;
+            selectedCategoryName = categoryName;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
         }
 
         async function addCategory(event) {
@@ -185,12 +232,11 @@
             if (!category) return;
 
             try {
-                const response = await databases.createDocument(DATABASE_ID, CATEGORY_COLLECTION_ID, 'unique()', {
+                await databases.createDocument(DATABASE_ID, CATEGORY_COLLECTION_ID, 'unique()', {
                     categoryName: category,
                     creatorId: currentUserId,
                     groupId: groupId
                 });
-                
                 categoryInput.value = '';
                 await getCategories();
             } catch (error) {
@@ -199,7 +245,39 @@
             }
         }
 
+        async function editCategory() {
+            const newCategoryName = prompt("Edit category name:", selectedCategoryName);
+            if (newCategoryName && newCategoryName.trim()) {
+                try {
+                    await databases.updateDocument(DATABASE_ID, CATEGORY_COLLECTION_ID, selectedCategoryId, {
+                        categoryName: newCategoryName.trim(),
+                    });
+                    await getCategories();
+                    closeModal();
+                } catch (error) {
+                    console.error("Error editing category:", error);
+                    alert("Failed to edit category. Please try again.");
+                }
+            }
+        }
+
+        async function deleteCategory() {
+            if (confirm("Are you sure you want to delete this category?")) {
+                try {
+                    await databases.deleteDocument(DATABASE_ID, CATEGORY_COLLECTION_ID, selectedCategoryId);
+                    await getCategories();
+                    closeModal();
+                } catch (error) {
+                    console.error("Error deleting category:", error);
+                    alert("Failed to delete category. Please try again.");
+                }
+            }
+        }
+
         document.getElementById('categoryForm').addEventListener('submit', addCategory);
+        document.getElementById('editBtn').addEventListener('click', editCategory);
+        document.getElementById('deleteBtn').addEventListener('click', deleteCategory);
+        document.getElementById('closeModal').addEventListener('click', closeModal);
 
         // Initialize the app
         init();
