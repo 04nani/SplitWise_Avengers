@@ -12,7 +12,9 @@ const getFriendsData = async () => {
     const response = await databases.listDocuments(
       "66f9e43e00253528c7a8", // Database ID
       "66fc597e0027848acf57", // Collection ID for 'FriendCollections'
-      [Appwrite.Query.equal("userId", user_1.$id)] // Query by current user's ID
+      [Appwrite.Query.equal("userId", user_1.$id),
+       Appwrite.Query.equal("status","accepted")
+      ] // Query by current user's ID
     );
 
     // Log the retrieved data to the console
