@@ -90,7 +90,7 @@
         .activity-item p {
             margin: 0;
         }
-        .friend-button {
+        .action-button {
             position: absolute;
             top: 10px;
             right: 20px;
@@ -138,8 +138,8 @@
 </head>
 <body>
     
-    <button class="friend-button" onclick="redirectToFriends()">
-        <i class="fas fa-user-plus"></i>
+    <button class="action-button" onclick="handleAction()">
+        <i id="action-icon" class="fas fa-user-plus"></i>
     </button>
     
 
@@ -169,7 +169,7 @@
             <i class="fas fa-plus-circle"></i>
             Add
         </a>
-        <a href="#" onclick="navigate('activities')">
+        <a href="#" onclick="navigate('activity')">
             <i class="fas fa-list"></i>
             Activity
         </a>
@@ -239,5 +239,6 @@
         }
             </script>
 <script src="pages.js"></script>
+<script src="actionhandling.js"></script>
 </body>
 </html>
