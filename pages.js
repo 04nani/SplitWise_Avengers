@@ -4,11 +4,29 @@ console.log(client);
 
 const databases = new Appwrite.Databases(client);
 
+// Function to update the friends list
+function updateFriendsList() {
+  console.log("Updating Friends List");
+  getFriendsData(); 
+}
+
+// Function to update the groups list
+function updateGroupsList() {
+  console.log("Updating Groups List");
+  getGroups(); 
+}
+
+
 const getFriendsData = async () => {
   try {
+    const friendsListContainer = document.querySelector('ul[role="list"].max-w-sm');
+    friendsListContainer.innerHTML = '';
+
     const user_1 = await account.get(); // Get current user
     console.log(`"user id : ${user_1.$id}"`);
     
+    console.log("Updating Friends List");
+
     const response = await databases.listDocuments(
       "66f9e43e00253528c7a8", // Database ID
       "66fc597e0027848acf57", // Collection ID for 'FriendCollections'
@@ -40,8 +58,10 @@ const getFriendsData = async () => {
           console.log(friends);
 
           // Continue with DOM manipulation and rendering
+          if (friends.length > 0) {
           const liElement = document.createElement("li");
           liElement.className = "py-3 sm:py-4";
+            liElement.setAttribute("data-friend-id", element.friendId); // Add a data attribute for friend ID
 
           const flexDiv = document.createElement("div");
           flexDiv.className = "flex items-center space-x-3 rtl:space-x-reverse";
@@ -106,17 +126,20 @@ const getFriendsData = async () => {
 
 const getGroups = async () => {
   try {
+// Clear the existing list
+      const groupsListContainer = document.querySelector('ul[role="list"].max-w-sm');
+      groupsListContainer.innerHTML = '';
+
+      console.log("Updating Groups List");
     const response = await databases.listDocuments(
-      "66f9e43e00253528c7a8", // Replace with your database ID
-      "66ffef8e000e9a26e8bf", // Collection ID for 'FriendCollections'
-      // Appwrite.Query.equal('$id', element.groupid),      // Filter by document ID
-      [Appwrite.Query.equal("memberId", "66fc9df006e60a5356bc")]
+          "66f9e43e00253528c7a8", // Database ID
+          "66ffef8e000e9a26e8bf", // Collection ID for 'Group Members'
+          [Appwrite.Query.equal("memberId", "66fc9df006e60a5356bc")] // Replace with the current user ID if available
     );
 
     // Log the retrieved data to the console
     console.log(response.documents);
-
-    var resp = response.documents;
+      const resp = response.documents;
 
     resp.forEach(async (element) => {
       // console.log(element.groupid);
@@ -124,21 +147,17 @@ const getGroups = async () => {
       // 66fc9df006e60a5356bc
 
       try {
-        const response = await databases.listDocuments(
-          "66f9e43e00253528c7a8", // Replace with your database ID
-          "66ffed4e001b7299c97c", // Collection ID for the 'users' collection
-
+              const groupResponse = await databases.listDocuments(
+                  "66f9e43e00253528c7a8", // Database ID
+                  "66ffed4e001b7299c97c", // Collection ID for the 'Groups' collection
           [Appwrite.Query.equal("$id", element.groupid)]
         );
 
-        // Loop through the friend list and get each friend's details
-        const friends = response.documents;
+              const groups = groupResponse.documents;
+              console.log(groups);
 
-        // console.log(friends);
-
-        // console.log()
-
-        // Create <li> element with class
+              if (groups.length > 0) {
+                  // Create <li> element for each group
         const liElement = document.createElement("li");
         liElement.className = "py-3 sm:py-4";
 
@@ -153,9 +172,8 @@ const getGroups = async () => {
         // Create the image element
         const imgElement = document.createElement("img");
         imgElement.className = "w-8 h-8 rounded-full";
-        imgElement.src =
-          "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
-        imgElement.alt = friends[0]["groupName"];
+                  imgElement.src = "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
+                  imgElement.alt = groups[0]["groupName"];
 
         // Append the image to its container
         // imgDiv.appendChild(imgElement);
@@ -166,9 +184,8 @@ const getGroups = async () => {
 
         // Create <p> for name
         const nameParagraph = document.createElement("p");
-        nameParagraph.className =
-          "text-sm font-semibold text-white truncate";
-        nameParagraph.textContent = friends[0]["groupName"];
+                  nameParagraph.className = "text-sm font-semibold text-white truncate";
+                  nameParagraph.textContent = groups[0]["groupName"];
 
         // Create <p> for email
         const emailParagraph = document.createElement("p");
@@ -209,15 +226,17 @@ const getGroups = async () => {
         // Append all elements to the flex container
         flexDiv.appendChild(imgDiv);
         flexDiv.appendChild(contentDiv);
-        flexDiv.appendChild(availabilitySpan);
 
         // Append flexDiv to the <li> element
         liElement.appendChild(flexDiv);
 
-        // Append <li> to an existing <ul> or <ol> element
-        document.querySelector("ul").appendChild(liElement);
+                  // Append the list item to the groups list container
+                  groupsListContainer.appendChild(liElement);
+              } else {
+                  console.warn("No details found for groupId:", element.groupid);
+              }
       } catch (error) {
-        console.error("Failed to retrieve data:", error);
+              console.error("Failed to retrieve group details:", error);
       }
     });
   } catch (error) {
