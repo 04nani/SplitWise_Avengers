@@ -5,165 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recent Activity</title>
-    <style>
-        body {
-            background-color: #121212;
-            color: #FFFFFF;
-            font-family: 'Open Sans', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            background-color: #1E1E1E;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            margin: 20px auto;
-        }
-
-        h1 {
-            text-align: center;
-            color: #57BB8A;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        li {
-            background-color: #2A2A2A;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .activity-details {
-            flex: 1;
-        }
-
-        .activity-user {
-            font-weight: bold;
-            color: #57BB8A;
-        }
-
-        .activity-description {
-            margin: 5px 0;
-            color: #AAAAAA;
-        }
-
-        .activity-amount {
-            color: #FF6B6B;
-            font-weight: bold;
-        }
-
-        .activity-paid {
-            color: #57BB8A;
-            font-weight: bold;
-        }
-
-        .activity-date {
-            color: #AAAAAA;
-            font-size: 12px;
-        }
-    </style>
+    <link rel="stylesheet" href="/activity/style.css">
 </head>
 
 <body>
-    <div class="container">
-        <h1>Recent Activity</h1>
-        <ul id="activityList"></ul>
+    <div class="activity-container">
+        <h2>Recent Activity</h2>
+        <div id="activityList" class="activity-list"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
-    <script>
-        // Appwrite configuration
-        const client = new Appwrite.Client();
-        client
-            .setEndpoint('https://cloud.appwrite.io/v1')  // Replace with your Appwrite endpoint
-            .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
-
-        const databases = new Appwrite.Databases(client);
-        const account = new Appwrite.Account(client);  // Use Account service to get the logged-in user's ID
-        const EXPENSES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your expenses collection ID
-        const DATABASE_ID = "66f9e43e00253528c7a8";
-        
-        const activityList = document.getElementById('activityList');
-        let currentUserId = null;
-
-        // Fetch the logged-in user's details
-        async function getCurrentUser() {
-            try {
-                const user = await account.get();
-                currentUserId = user.$id;  // Logged-in user's ID
-                fetchUserExpenses();  // Call to fetch expenses after fetching the user
-            } catch (error) {
-                console.error('Error fetching current user:', error);
-                alert('Failed to fetch user data. Please make sure you are logged in.');
-            }
-        }
-
-        // Fetch expenses from the Appwrite database for the logged-in user
-        async function fetchUserExpenses() {
-            try {
-                if (!currentUserId) return;  // Ensure we have the user's ID
-
-                // Query to fetch expenses where paidById matches the logged-in user's ID
-                const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID, [
-                    Appwrite.Query.equal("paidById", currentUserId)
-                ]);
-                
-                console.log("Expenses fetched for user:", response.documents); // Debugging statement
-                if (response.documents.length > 0) {
-                    await displayExpenses(response.documents);
-                } else {
-                    activityList.innerHTML = '<p>No recent expenses found.</p>';
-                }
-            } catch (error) {
-                console.error('Error fetching user expenses:', error);
-                alert('Failed to fetch user expenses.');
-            }
-        }
-
-        // Display the expenses as activities in the UI
-        async function displayExpenses(expenses) {
-            activityList.innerHTML = ''; // Clear previous activities
-
-            if (expenses.length === 0) {
-                activityList.innerHTML = '<p>No recent expenses found.</p>';
-                return;
-            }
-
-            expenses.forEach(expense => {
-                const li = document.createElement('li');
-                const expenseDate = new Date(expense.time).toLocaleDateString('en-US', {
-                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
-                });
-
-                const amountClass = expense.amount < 0 ? 'activity-paid' : 'activity-amount';
-
-                li.innerHTML = `
-                    <div class="activity-details">
-                        <div class="activity-user">You added "${expense.description}"</div>
-                        <div class="activity-description">
-                            You owe <span class="${amountClass}">$${Math.abs(expense.amount)}</span>
-                        </div>
-                        <div class="activity-date">${expenseDate}</div>
-                    </div>
-                `;
-
-                activityList.appendChild(li);
-            });
-        }
-
-        // Call getCurrentUser when the page loads
-        window.onload = getCurrentUser;
-    </script>
+    <script src="/activity/activity.js"></script>
 </body>
 
 </html>
