@@ -175,8 +175,7 @@ const getGroups = async () => {
                   imgElement.src = "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
                   imgElement.alt = groups[0]["groupName"];
 
-        // Append the image to its container
-        // imgDiv.appendChild(imgElement);
+                  imgDiv.appendChild(imgElement);
 
         // Create the flex-1 container for name and email
         const contentDiv = document.createElement("div");
