@@ -113,6 +113,9 @@ const getFriendsData = async () => {
           liElement.appendChild(flexDiv);
           document.querySelector("ul").appendChild(liElement);
 
+         } else {
+          console.warn("No details found for friendId:", element.friendId);
+        }
         } catch (error) {
           console.error("Failed to retrieve friend details:", error);
         }
