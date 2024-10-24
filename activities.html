@@ -89,42 +89,44 @@
             .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
 
         const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);  // Use Account service to get the logged-in user's ID
         const EXPENSES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your expenses collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
-        const USERS_COLLECTION_ID = "users_collection"; // Replace with your users collection ID
-
+        
         const activityList = document.getElementById('activityList');
+        let currentUserId = null;
 
-        // Fetch friend details based on friendId and return name
-        async function fetchFriendName(friendId) {
+        // Fetch the logged-in user's details
+        async function getCurrentUser() {
             try {
-                const response = await databases.listDocuments(
-                    DATABASE_ID,
-                    USERS_COLLECTION_ID,
-                    [Appwrite.Query.equal("accountId", friendId)]
-                );
-                console.log("Friend details fetched:", response.documents); // Debugging statement
-                return response.documents[0]?.name || "Unknown";  // Assuming 'name' is the friend's name field
+                const user = await account.get();
+                currentUserId = user.$id;  // Logged-in user's ID
+                fetchUserExpenses();  // Call to fetch expenses after fetching the user
             } catch (error) {
-                console.error('Error fetching friend details:', error);
-                return "Unknown";
+                console.error('Error fetching current user:', error);
+                alert('Failed to fetch user data. Please make sure you are logged in.');
             }
         }
 
-        // Fetch expenses from the Appwrite database added by friends
-        async function fetchFriendExpenses() {
+        // Fetch expenses from the Appwrite database for the logged-in user
+        async function fetchUserExpenses() {
             try {
-                // Fetch all expenses (you can modify the query if needed)
-                const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID);
-                console.log("Expenses fetched:", response.documents); // Debugging statement
+                if (!currentUserId) return;  // Ensure we have the user's ID
+
+                // Query to fetch expenses where paidById matches the logged-in user's ID
+                const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID, [
+                    Appwrite.Query.equal("paidById", currentUserId)
+                ]);
+                
+                console.log("Expenses fetched for user:", response.documents); // Debugging statement
                 if (response.documents.length > 0) {
                     await displayExpenses(response.documents);
                 } else {
                     activityList.innerHTML = '<p>No recent expenses found.</p>';
                 }
             } catch (error) {
-                console.error('Error fetching friend expenses:', error);
-                alert('Failed to fetch friend expenses');
+                console.error('Error fetching user expenses:', error);
+                alert('Failed to fetch user expenses.');
             }
         }
 
@@ -137,11 +139,9 @@
                 return;
             }
 
-            for (const expense of expenses) {
+            expenses.forEach(expense => {
                 const li = document.createElement('li');
-                const friendName = await fetchFriendName(expense.addedBy);  // Fetch friend name based on the 'addedBy' field
-
-                const expenseDate = new Date(expense.date).toLocaleDateString('en-US', {
+                const expenseDate = new Date(expense.time).toLocaleDateString('en-US', {
                     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
                 });
 
@@ -149,21 +149,20 @@
 
                 li.innerHTML = `
                     <div class="activity-details">
-                        <div class="activity-user">${friendName} added "${expense.description}"</div>
+                        <div class="activity-user">You added "${expense.description}"</div>
                         <div class="activity-description">
-                            ${expense.amount < 0 ? 'You paid' : 'You owe'} 
-                            <span class="${amountClass}">$${Math.abs(expense.amount)}</span>
+                            You owe <span class="${amountClass}">$${Math.abs(expense.amount)}</span>
                         </div>
                         <div class="activity-date">${expenseDate}</div>
                     </div>
                 `;
 
                 activityList.appendChild(li);
-            }
+            });
         }
 
-        // Call fetchFriendExpenses when the page loads
-        window.onload = fetchFriendExpenses;
+        // Call getCurrentUser when the page loads
+        window.onload = getCurrentUser;
     </script>
 </body>
 
