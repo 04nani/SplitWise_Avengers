@@ -4,555 +4,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat</title>
+    <title>Recent Activity</title>
     <style>
-        * {
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: 'Open Sans', Arial, sans-serif;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
-        body {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .chat-container {
-            width: 100%;
+        .container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             max-width: 800px;
-            height: 90vh;
-            background-color: #2A2A2A;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin: 20px;
+            margin: 20px auto;
         }
 
-        .chat-header {
-            background-color: #232323;
-            padding: 16px 20px;
-            border-bottom: 1px solid #363636;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #57BB8A;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 1.2rem;
-            color: #ffffff;
-        }
-
-        .user-name {
-            color: #ffffff;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            background-color: #2A2A2A;
-        }
-
-        .message-wrapper {
-            max-width: 80%;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .message-wrapper.message-sent {
-            align-self: flex-end;
-        }
-
-        .message-wrapper.message-received {
-            align-self: flex-start;
-        }
-
-        .message {
-            padding: 12px 16px;
-            border-radius: 16px;
-            color: #ffffff;
-            position: relative;
-            word-wrap: break-word;
-        }
-
-        .message-sent .message {
-            background-color: #57BB8A;
-            border-bottom-right-radius: 4px;
-        }
-
-        .message-received .message {
-            background-color: #363636;
-            border-bottom-left-radius: 4px;
-        }
-
-        .timestamp {
-            font-size: 0.75rem;
-            color: #888888;
-            margin: 0 4px;
-        }
-
-        .chat-input {
-            padding: 20px;
-            background-color: #232323;
-            border-top: 1px solid #363636;
-        }
-
-        .input-container {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 12px 16px;
-            border-radius: 24px;
-            border: 1px solid #404040;
-            background-color: #363636;
-            color: #ffffff;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .chat-input input:focus {
-            border-color: #57BB8A;
-        }
-
-        .chat-input input::placeholder {
-            color: #888888;
-        }
-
-        .chat-input button {
-            width: 44px;
-            height: 44px;
-            border: none;
-            border-radius: 50%;
-            background-color: #57BB8A;
-            color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .chat-input button:hover {
-            background-color: #4ca77a;
-        }
-
-        .chat-input button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .error-message {
+        h1 {
             text-align: center;
-            color: #ff4444;
-            padding: 20px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
             color: #57BB8A;
         }
 
-        /* Scrollbar styling */
-        .chat-messages::-webkit-scrollbar {
-            width: 8px;
+        ul {
+            list-style: none;
+            padding: 0;
         }
 
-        .chat-messages::-webkit-scrollbar-track {
-            background: #232323;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: #404040;
+        li {
+            background-color: #2A2A2A;
+            padding: 10px;
             border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .chat-messages::-webkit-scrollbar-thumb:hover {
-            background: #4d4d4d;
+        .activity-details {
+            flex: 1;
         }
 
-        /* Animation for new messages */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .activity-user {
+            font-weight: bold;
+            color: #57BB8A;
         }
 
-        .message-wrapper {
-            animation: fadeIn 0.2s ease-out;
+        .activity-description {
+            margin: 5px 0;
+            color: #AAAAAA;
+        }
+
+        .activity-amount {
+            color: #FF6B6B;
+            font-weight: bold;
+        }
+
+        .activity-paid {
+            color: #57BB8A;
+            font-weight: bold;
+        }
+
+        .activity-date {
+            color: #AAAAAA;
+            font-size: 12px;
         }
     </style>
 </head>
 
 <body>
-    <div class="chat-container">
-        <div class="chat-header" id="chatHeader">
-            <div class="avatar" id="friendAvatar">?</div>
-            <div class="user-name">Loading...</div>
-        </div>
-        <div class="chat-messages" id="messagesContainer">
-            <div class="loading">Loading...</div>
-        </div>
-        <div class="chat-input">
-            <div class="input-container">
-                <input type="text" id="messageInput" placeholder="Type a message...">
-                <button onclick="sendMessage()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-            </div>
-        </div>
+    <div class="container">
+        <h1>Recent Activity</h1>
+        <ul id="activityList"></ul>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
     <script>
         // Appwrite configuration
         const client = new Appwrite.Client();
         client
-            .setEndpoint('https://cloud.appwrite.io/v1')
-            .setProject('66f9c641001dbbd4bb66');
+            .setEndpoint('https://cloud.appwrite.io/v1')  // Replace with your Appwrite endpoint
+            .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
 
         const databases = new Appwrite.Databases(client);
-        const account = new Appwrite.Account(client);
-
+        const EXPENSES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your expenses collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
-        const MESSAGES_COLLECTION_ID = '6717d5af00350bc68759';
-        const USERS_COLLECTION_ID = "66f9e45d002562334094";
-        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
-        const MESSAGES_PER_PAGE = 20;
+        const USERS_COLLECTION_ID = "users_collection"; // Replace with your users collection ID
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const friendId = urlParams.get('friendId');
+        const activityList = document.getElementById('activityList');
 
-        let lastMessageId = null;
-        let isLoading = false;
-        let isFriend = false;
-        let currentUserId = null;
-        let unsubscribe = null;
-        let displayedMessageIds = new Set();
-
-        async function checkFriendship(friendId) {
-            try {
-                const user = await account.get();
-                currentUserId = user.$id;
-
-                const query = await databases.listDocuments(
-                    DATABASE_ID,
-                    FRIENDS_COLLECTION_ID,
-                    [
-                        Appwrite.Query.equal('status', 'accepted'),
-                        Appwrite.Query.or([
-                            Appwrite.Query.and([
-                                Appwrite.Query.equal('userId', currentUserId),
-                                Appwrite.Query.equal('friendId', friendId)
-                            ]),
-                            Appwrite.Query.and([
-                                Appwrite.Query.equal('userId', friendId),
-                                Appwrite.Query.equal('friendId', currentUserId)
-                            ])
-                        ])
-                    ]
-                );
-
-                isFriend = query.documents.length > 0;
-
-                if (!isFriend) {
-                    showError("You are not friends with this user");
-                    document.querySelector('.chat-input').style.display = 'none';
-                } else {
-                    const friend = await fetchFriendDetails(friendId);
-                    if (friend && friend.length > 0) {
-                        updateFriendDetails(friend);
-                        await loadMessages();
-                        subscribeToMessages();
-                    } else {
-                        showError("Friend not found");
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching friend:', error);
-                showError('Failed to connect to chat');
-            }
-        }
-
-        async function fetchFriendDetails(friendId) {
+        // Fetch friend details based on friendId and return name
+        async function fetchFriendName(friendId) {
             try {
                 const response = await databases.listDocuments(
                     DATABASE_ID,
                     USERS_COLLECTION_ID,
                     [Appwrite.Query.equal("accountId", friendId)]
                 );
-                return response.documents;
+                return response.documents[0]?.name || "Unknown";  // Assuming 'name' is the friend's name field
             } catch (error) {
                 console.error('Error fetching friend details:', error);
-                return null;
+                return "Unknown";
             }
         }
 
-        const messagesContainer = document.getElementById('messagesContainer');
-        let scrollTimeout;
-
-        // Debounced scroll handler
-        messagesContainer.addEventListener('scroll', () => {
-            if (scrollTimeout) clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(async () => {
-                if (messagesContainer.scrollTop === 0 && !isLoading) {
-                    await loadMessages(true);
-                }
-            }, 150);
-        });
-
-        async function loadMessages(loadMore = false) {
-            if (isLoading) return;
-            isLoading = true;
-
+        // Fetch expenses from the Appwrite database added by friends
+        async function fetchFriendExpenses() {
             try {
-                let queries = [
-                    Appwrite.Query.or([
-                        Appwrite.Query.and([
-                            Appwrite.Query.equal('senderId', currentUserId),
-                            Appwrite.Query.equal('receiverId', friendId)
-                        ]),
-                        Appwrite.Query.and([
-                            Appwrite.Query.equal('senderId', friendId),
-                            Appwrite.Query.equal('receiverId', currentUserId)
-                        ])
-                    ]),
-                    Appwrite.Query.orderDesc('$createdAt'),
-                    Appwrite.Query.limit(MESSAGES_PER_PAGE)
-                ];
-
-                if (loadMore && lastMessageId) {
-                    queries.push(Appwrite.Query.cursorAfter(lastMessageId));
-                }
-
-                const messagesResponse = await databases.listDocuments(
-                    DATABASE_ID,
-                    MESSAGES_COLLECTION_ID,
-                    queries
-                );
-
-                if (messagesResponse.documents.length > 0) {
-                    lastMessageId = messagesResponse.documents[messagesResponse.documents.length - 1].$id;
-                    const messages = [...messagesResponse.documents].reverse();
-                    if (!loadMore) {
-                        displayedMessageIds.clear(); // Clear tracking when loading initial messages
-                    }
-                    displayMessages(messages, loadMore);
-
-                    if (!loadMore) {
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    }
-                } else if (!loadMore) {
-                    displayedMessageIds.clear();
-                    messagesContainer.innerHTML = '<div class="loading">No messages yet</div>';
-                }
+                // You can adjust the query to fetch only expenses added by friends.
+                const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID, [
+                    Appwrite.Query.equal("addedBy", "friendId")  // Adjust to the actual friend identifier in your collection
+                ]);
+                await displayExpenses(response.documents);
             } catch (error) {
-                console.error('Error loading messages:', error);
-                showError('Failed to load messages');
-            } finally {
-                isLoading = false;
+                console.error('Error fetching expenses:', error);
+                alert('Failed to fetch friend expenses');
             }
         }
 
-        function displayMessages(messages, prepend = false) {
-            const fragment = document.createDocumentFragment();
-            messages.forEach(message => {
-                // Skip if message is already displayed
-                if (displayedMessageIds.has(message.$id)) {
-                    return;
-                }
+        // Display the expenses as activities in the UI
+        async function displayExpenses(expenses) {
+            activityList.innerHTML = ''; // Clear previous activities
 
-                displayedMessageIds.add(message.$id);
+            if (expenses.length === 0) {
+                activityList.innerHTML = '<p>No recent expenses found.</p>';
+                return;
+            }
 
-                const messageWrapper = document.createElement('div');
-                messageWrapper.className = `message-wrapper ${message.senderId === currentUserId ?
-                    'message-sent' : 'message-received'}`;
-                messageWrapper.id = `message-${message.$id}`;
+            for (const expense of expenses) {
+                const li = document.createElement('li');
+                const friendName = await fetchFriendName(expense.addedBy);  // Fetch friend name based on the 'addedBy' field
 
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message';
-                messageDiv.textContent = message.content;
-
-                const timestamp = document.createElement('div');
-                timestamp.className = 'timestamp';
-                timestamp.textContent = new Date(message.$createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
+                const expenseDate = new Date(expense.date).toLocaleDateString('en-US', {
+                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
                 });
 
-                messageWrapper.appendChild(messageDiv);
-                messageWrapper.appendChild(timestamp);
-                fragment.appendChild(messageWrapper);
-            });
+                const amountClass = expense.amount < 0 ? 'activity-paid' : 'activity-amount';
 
-            // Only proceed if we have new messages to display
-            if (fragment.children.length > 0) {
-                if (prepend) {
-                    const scrollHeight = messagesContainer.scrollHeight;
-                    const scrollTop = messagesContainer.scrollTop;
+                li.innerHTML = `
+                    <div class="activity-details">
+                        <div class="activity-user">${friendName} added "${expense.description}"</div>
+                        <div class="activity-description">
+                            ${expense.amount < 0 ? 'You paid' : 'You owe'} 
+                            <span class="${amountClass}">$${Math.abs(expense.amount)}</span>
+                        </div>
+                        <div class="activity-date">${expenseDate}</div>
+                    </div>
+                `;
 
-                    if (messagesContainer.firstChild) {
-                        messagesContainer.insertBefore(fragment, messagesContainer.firstChild);
-                    } else {
-                        messagesContainer.appendChild(fragment);
-                    }
-
-                    messagesContainer.scrollTop = scrollTop + (messagesContainer.scrollHeight - scrollHeight);
-                } else {
-                    if (!prepend && messages.length === 1) {
-                        messagesContainer.appendChild(fragment);
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    } else {
-                        messagesContainer.innerHTML = '';
-                        displayedMessageIds.clear(); // Clear the tracking set when clearing messages
-                        messages.forEach(msg => displayedMessageIds.add(msg.$id)); // Re-add all message IDs
-                        messagesContainer.appendChild(fragment);
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    }
-                }
+                activityList.appendChild(li);
             }
         }
 
-        // Update friend details display
-        function updateFriendDetails(friend) {
-            const nameElement = document.querySelector('.user-name');
-            const avatarElement = document.getElementById('friendAvatar');
-
-            if (friend && friend.length > 0) {
-                nameElement.textContent = friend[0].name;
-                avatarElement.textContent = friend[0].name.charAt(0).toUpperCase();
-                document.title = `Chat with ${friend[0].name}`;
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const content = input.value.trim();
-
-            if (!content || !isFriend) return;
-
-            const button = document.querySelector('.chat-input button');
-            button.disabled = true;
-
-            try {
-                // Use Appwrite.ID for generating unique ID
-                const message = await databases.createDocument(
-                    DATABASE_ID,
-                    MESSAGES_COLLECTION_ID,
-                    Appwrite.ID.unique(),  // Fixed: Using Appwrite.ID instead of just ID
-                    {
-                        content: content,
-                        senderId: currentUserId,
-                        receiverId: friendId,
-                    }
-                );
-
-                // Optimistically display the message
-                displayMessages([message], false);
-                input.value = '';
-                input.focus();
-
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            } catch (error) {
-                console.error('Error sending message:', error);
-                showError('Failed to send message');
-            } finally {
-                button.disabled = false;
-            }
-        }
-
-        function subscribeToMessages() {
-            if (unsubscribe) {
-                unsubscribe();
-            }
-
-            unsubscribe = client.subscribe(
-                `databases.${DATABASE_ID}.collections.${MESSAGES_COLLECTION_ID}.documents`,
-                response => {
-                    const message = response.payload;
-
-                    // Only process messages relevant to this chat
-                    if ((message.senderId === currentUserId && message.receiverId === friendId) ||
-                        (message.senderId === friendId && message.receiverId === currentUserId)) {
-
-                        if (response.events.includes('databases.*.collections.*.documents.*.create')) {
-                            // Don't display if message already exists (avoid duplicates)
-                            if (!document.getElementById(`message-${message.$id}`)) {
-                                displayMessages([message], false);
-                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                            }
-                        }
-                    }
-                }
-            );
-        }
-
-        function showError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            messagesContainer.innerHTML = '';
-            messagesContainer.appendChild(errorDiv);
-        }
-
-        // Event listeners
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        // Cleanup
-        window.addEventListener('beforeunload', () => {
-            if (unsubscribe) unsubscribe();
-            if (scrollTimeout) clearTimeout(scrollTimeout);
-        });
-
-        // Initialize
-        if (friendId) {
-            checkFriendship(friendId);
-        } else {
-            showError('No friend selected');
-            document.querySelector('.chat-input').style.display = 'none';
-        }
+        // Call fetchFriendExpenses when the page loads
+        window.onload = fetchFriendExpenses;
     </script>
 </body>
 
