@@ -103,6 +103,7 @@
                     USERS_COLLECTION_ID,
                     [Appwrite.Query.equal("accountId", friendId)]
                 );
+                console.log("Friend details fetched:", response.documents); // Debugging statement
                 return response.documents[0]?.name || "Unknown";  // Assuming 'name' is the friend's name field
             } catch (error) {
                 console.error('Error fetching friend details:', error);
@@ -113,13 +114,16 @@
         // Fetch expenses from the Appwrite database added by friends
         async function fetchFriendExpenses() {
             try {
-                // You can adjust the query to fetch only expenses added by friends.
-                const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID, [
-                    Appwrite.Query.equal("addedBy", "friendId")  // Adjust to the actual friend identifier in your collection
-                ]);
-                await displayExpenses(response.documents);
+                // Fetch all expenses (you can modify the query if needed)
+                const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID);
+                console.log("Expenses fetched:", response.documents); // Debugging statement
+                if (response.documents.length > 0) {
+                    await displayExpenses(response.documents);
+                } else {
+                    activityList.innerHTML = '<p>No recent expenses found.</p>';
+                }
             } catch (error) {
-                console.error('Error fetching expenses:', error);
+                console.error('Error fetching friend expenses:', error);
                 alert('Failed to fetch friend expenses');
             }
         }
