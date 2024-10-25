@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Card</title>
+    <style>
+        body {
+            font-family: 'Open Sans', Arial, sans-serif;
+            background-color: #121212;
+            color: #FFFFFF;
+            margin: 0;
+            padding: 0;
+        }
+
+        .activity-card {
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-title {
+            font-size: 1.25em;
+            color: #57BB8A;
+            font-weight: bold;
+        }
+
+        .amount {
+            font-size: 1.25em;
+            font-weight: bold;
+        }
+
+        .amount-paid {
+            color: #57BB8A;
+        }
+
+        .amount-owed {
+            color: #FF6B6B;
+        }
+
+        .activity-details {
+            margin-top: 8px;
+            color: #AAAAAA;
+        }
+
+        .date {
+            color: #AAAAAA;
+            font-size: 0.9em;
+        }
+
+        .amount-message {
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .get-back {
+            color: #57BB8A;
+        }
+
+        .owe {
+            color: #FF6B6B;
+        }
+    </style>
+</head>
+<body>
+
+<div id="activityList"></div>
+
+<script>
+    // Mock current user and activity data for testing
+    const currentUser = { id: 'currentUserId', name: 'Current User' };
+    const activities = [
+        {
+            Desc: "Dinner at Pizza Place",
+            Amout: "1500",
+            PaidBy: { $id: 'friendId', name: 'Friend' },
+            Group: { groupName: 'Friends Group' },
+            Time: "2024-10-22T12:00:00Z",
+            splitMember: [{ $id: 'friendId' }, { $id: 'currentUserId' }]
+        }
+    ];
+
+    // Function to render activities
+    function renderActivities() {
+        const activityList = document.getElementById("activityList");
+
+        activities.forEach(activity => {
+            const isPaidByCurrentUser = activity.PaidBy.$id === currentUser.id;
+            const isCurrentUserInvolved = activity.splitMember.some(member => member.$id === currentUser.id);
+            const splitCount = activity.splitMember.length;
+            let amountMessage = "";
+
+            const individualAmount = parseFloat(activity.Amout) / splitCount;
+
+            if (isPaidByCurrentUser && isCurrentUserInvolved) {
+                const getback = parseFloat(activity.Amout) - individualAmount;
+                amountMessage = `You get back $${getback.toFixed(2)}`;
+            } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
+                amountMessage = `You get back $${activity.Amout}`;
+            } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
+                amountMessage = `You owe $${individualAmount.toFixed(2)}`;
+            } else {
+                amountMessage = `Not involved`;
+            }
+
+            const card = document.createElement("div");
+            card.className = "activity-card";
+            card.innerHTML = `
+                <div class="activity-header">
+                    <span class="activity-title">${activity.Desc}</span>
+                    <span class="amount ${isPaidByCurrentUser ? "amount-paid" : "amount-owed"}">
+                        &#8377;${activity.Amout}
+                    </span>
+                </div>
+                <p class="activity-details">
+                    Added by <span class="${isPaidByCurrentUser ? "get-back" : ""}">${activity.PaidBy.name}</span> in 
+                    <span class="capitalize">${activity.Group.groupName}</span>
+                </p>
+                <p class="date">${new Date(activity.Time).toLocaleString()}</p>
+                <p class="amount-message ${isPaidByCurrentUser ? "get-back" : "owe"}">${amountMessage}</p>
+            `;
+            activityList.appendChild(card);
+        });
+    }
+
+    renderActivities();
+</script>
+</body>
+</html>
