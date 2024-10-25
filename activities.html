@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recent Activity</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: 'Open Sans', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #57BB8A;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: #2A2A2A;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-user {
+            font-weight: bold;
+            color: #57BB8A;
+        }
+
+        .activity-description {
+            margin: 5px 0;
+            color: #AAAAAA;
+        }
+
+        .activity-amount-positive {
+            color: #57BB8A;
+            font-weight: bold;
+        }
+
+        .activity-amount-negative {
+            color: #FF6B6B;
+            font-weight: bold;
+        }
+
+        .activity-date {
+            color: #AAAAAA;
+            font-size: 12px;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #232323;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .footer-icon {
+            color: #888;
+            text-align: center;
+        }
+
+        .footer-icon.active {
+            color: #57BB8A;
+        }
+
+        .footer-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Recent Activity</h1>
+        <ul id="activityList"></ul>
+    </div>
+
+    <div class="footer">
+        <div class="footer-icon" id="friendsIcon">
+            <svg><!-- Friends icon --></svg>
+            <p>Friends</p>
+        </div>
+        <div class="footer-icon" id="groupsIcon">
+            <svg><!-- Groups icon --></svg>
+            <p>Groups</p>
+        </div>
+        <div class="footer-icon active" id="addIcon">
+            <svg><!-- Add icon --></svg>
+            <p>Add</p>
+        </div>
+        <div class="footer-icon" id="activityIcon">
+            <svg><!-- Activity icon --></svg>
+            <p>Activity</p>
+        </div>
+        <div class="footer-icon" id="accountIcon">
+            <svg><!-- Account icon --></svg>
+            <p>Account</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+    <script>
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1') // Set your Appwrite endpoint
+            .setProject('YOUR_PROJECT_ID'); // Set your Appwrite project ID
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = '66f9e43e00253528c7a8';
+        const ACTIVITY_COLLECTION_ID = '6702c39100338b173d15';
+
+        const activityList = document.getElementById('activityList');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const user = await account.get();
+                const currentUserId = user.$id;
+
+                // Fetch activities related to the current user
+                const response = await databases.listDocuments(
+                    DATABASE_ID,
+                    ACTIVITY_COLLECTION_ID,
+                    [Appwrite.Query.equal('userIds', currentUserId)]
+                );
+
+                const activities = response.documents;
+
+                activities.forEach(activity => {
+                    const li = document.createElement('li');
+                    const individualAmount = parseFloat(activity.amount);
+                    const amountClass = individualAmount > 0 ? 'activity-amount-positive' : 'activity-amount-negative';
+                    const amountMessage = individualAmount > 0 ? `You get back $${individualAmount}` : `You owe $${Math.abs(individualAmount)}`;
+
+                    li.innerHTML = `
+                        <div class="activity-details">
+                            <span class="activity-user">${activity.user} added "${activity.description}" in "${activity.groupName}"</span>
+                            <div class="activity-description">${amountMessage}</div>
+                            <div class="activity-date">${new Date(activity.date).toLocaleDateString()}</div>
+                        </div>
+                    `;
+
+                    activityList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error fetching activities:', error);
+                activityList.innerHTML = '<p>Error loading activities.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
