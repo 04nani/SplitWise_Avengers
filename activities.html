@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recent Activity</title>
+    <style>
+        body {
+            font-family: 'Open Sans', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #FFFFFF;
+        }
+
+        .activity-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            text-align: center;
+            color: #57BB8A;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .activity-item {
+            background-color: #2A2A2A;
+            border: 1px solid #363636;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-user {
+            font-weight: bold;
+            color: #57BB8A;
+        }
+
+        .activity-description {
+            color: #AAAAAA;
+        }
+
+        .activity-amount-positive {
+            color: #57BB8A;
+            font-weight: bold;
+        }
+
+        .activity-amount-negative {
+            color: #FF6B6B;
+            font-weight: bold;
+        }
+
+        .activity-date {
+            color: #AAAAAA;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="activity-container">
+        <h2>Recent Activity</h2>
+        <div id="activityList" class="activity-list"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+    <script>
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')  // Your Appwrite endpoint
+            .setProject('66f9c641001dbbd4bb66');  // Your project ID
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";  // Replace with your database ID
+        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your activities collection ID
+
+        const activityList = document.getElementById('activityList');
+
+        async function fetchActivities() {
+            try {
+                // Get the current user
+                const currentUser = await account.get();
+                const currentUserId = currentUser.$id;
+
+                // Fetch activities for the current user
+                const response = await databases.listDocuments(DATABASE_ID, ACTIVITIES_COLLECTION_ID);
+                const activities = response.documents;
+
+                if (activities.length === 0) {
+                    activityList.innerHTML = '<p>No recent activities found.</p>';
+                    return;
+                }
+
+                // Render each activity
+                activities.forEach(activity => {
+                    const isPaidByCurrentUser = activity.PaidBy.$id === currentUserId;
+                    const isCurrentUserInvolved = activity.splitMember?.some(member => member.$id === currentUserId) || false;
+                    const splitCount = activity.splitMember?.length ?? 1;
+
+                    let amountMessage = '';
+                    let amountClass = '';
+                    
+                    if (isPaidByCurrentUser && isCurrentUserInvolved) {
+                        const individualAmount = parseFloat(activity.Amout) / splitCount;
+                        const getback = parseFloat(activity.Amout) - individualAmount;
+                        amountMessage = `You get back $${getback.toFixed(2)}`;
+                        amountClass = 'activity-amount-positive';
+                    } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
+                        const individualAmount = parseFloat(activity.Amout);
+                        amountMessage = `You get back $${individualAmount.toFixed(2)}`;
+                        amountClass = 'activity-amount-positive';
+                    } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
+                        const individualAmount = parseFloat(activity.Amout) / splitCount;
+                        amountMessage = `You owe $${individualAmount.toFixed(2)}`;
+                        amountClass = 'activity-amount-negative';
+                    } else {
+                        amountMessage = `Not involved`;
+                    }
+
+                    // Create the activity item HTML
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'activity-item';
+
+                    const activityDate = new Date(activity.Time).toLocaleDateString('en-US', {
+                        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                    });
+
+                    activityItem.innerHTML = `
+                        <div class="activity-details">
+                            <span class="activity-user">${activity.PaidBy.name} added "${activity.Desc}" in "${activity.Group.groupName}"</span>
+                            <div class="activity-description ${amountClass}">${amountMessage}</div>
+                            <div class="activity-date">${activityDate}</div>
+                        </div>
+                    `;
+
+                    activityList.appendChild(activityItem);
+                });
+            } catch (error) {
+                console.error('Error fetching activities:', error);
+                activityList.innerHTML = '<p>Error loading activities.</p>';
+            }
+        }
+
+        // Fetch activities when the page loads
+        window.onload = fetchActivities;
+    </script>
+</body>
+</html>
