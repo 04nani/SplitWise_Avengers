@@ -113,23 +113,23 @@
 
                 // Render each activity
                 activities.forEach(activity => {
-                    const isPaidByCurrentUser = activity.PaidBy.$id === currentUserId;
+                    const ispaidByIdCurrentUser = activity.paidById.$id === currentUserId;
                     const isCurrentUserInvolved = activity.splitMember?.some(member => member.$id === currentUserId) || false;
                     const splitCount = activity.splitMember?.length ?? 1;
 
                     let amountMessage = '';
                     let amountClass = '';
                     
-                    if (isPaidByCurrentUser && isCurrentUserInvolved) {
+                    if (ispaidByIdCurrentUser && isCurrentUserInvolved) {
                         const individualAmount = parseFloat(activity.Amout) / splitCount;
                         const getback = parseFloat(activity.Amout) - individualAmount;
                         amountMessage = `You get back $${getback.toFixed(2)}`;
                         amountClass = 'activity-amount-positive';
-                    } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
+                    } else if (ispaidByIdCurrentUser && !isCurrentUserInvolved) {
                         const individualAmount = parseFloat(activity.Amout);
                         amountMessage = `You get back $${individualAmount.toFixed(2)}`;
                         amountClass = 'activity-amount-positive';
-                    } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
+                    } else if (!ispaidByIdCurrentUser && isCurrentUserInvolved) {
                         const individualAmount = parseFloat(activity.Amout) / splitCount;
                         amountMessage = `You owe $${individualAmount.toFixed(2)}`;
                         amountClass = 'activity-amount-negative';
@@ -147,7 +147,7 @@
 
                     activityItem.innerHTML = `
                         <div class="activity-details">
-                            <span class="activity-user">${activity.PaidBy.name} added "${activity.Desc}" in "${activity.Group.groupName}"</span>
+                            <span class="activity-user">${activity.paidById.name} added "${activity.Desc}" in "${activity.Group.groupName}"</span>
                             <div class="activity-description ${amountClass}">${amountMessage}</div>
                             <div class="activity-date">${activityDate}</div>
                         </div>
