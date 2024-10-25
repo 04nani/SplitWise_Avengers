@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,20 +124,25 @@
         }
 
         activities.forEach(activity => {
-            // Check and parse splitMembers if it's a string
+            // Ensure correct field names and handle missing values
+            const PaidByName = activity.PaidByName || 'Unknown';
+            const GroupName = activity.GroupName || 'Unknown Group';
+            const description = activity.description || 'No Description';
+            const amount = activity.amount || '0';
+            const time = activity.time || new Date().toISOString(); // Use current time if missing
             const splitMembers = activity.splitMembers ? activity.splitMembers.split('##') : [];
             const isCurrentUserInvolved = splitMembers.includes(currentUserId);
             const isPaidByCurrentUser = activity.PaidById === currentUserId;
             const splitCount = splitMembers.length || 1;  // Default to 1 if splitMembers is empty
             let amountMessage = "";
 
-            const individualAmount = parseFloat(activity.amount) / splitCount;
+            const individualAmount = parseFloat(amount) / splitCount;
 
             if (isPaidByCurrentUser && isCurrentUserInvolved) {
-                const getback = parseFloat(activity.amount) - individualAmount;
+                const getback = parseFloat(amount) - individualAmount;
                 amountMessage = `You get back ₹${getback.toFixed(2)}`;
             } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
-                amountMessage = `You get back ₹${activity.amount}`;
+                amountMessage = `You get back ₹${amount}`;
             } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
                 amountMessage = `You owe ₹${individualAmount.toFixed(2)}`;
             } else {
@@ -147,16 +153,16 @@
             card.className = "activity-card";
             card.innerHTML = `
                 <div class="activity-header">
-                    <span class="activity-title">${activity.description}</span>
+                    <span class="activity-title">${description}</span>
                     <span class="amount ${isPaidByCurrentUser ? "amount-paid" : "amount-owed"}">
-                        ₹${activity.amount}
+                        ₹${amount}
                     </span>
                 </div>
                 <p class="activity-details">
-                    Added by <span class="${isPaidByCurrentUser ? "get-back" : ""}">${activity.PaidByName}</span> in 
-                    <span class="capitalize">${activity.GroupName}</span>
+                    Added by <span class="${isPaidByCurrentUser ? "get-back" : ""}">${PaidByName}</span> in 
+                    <span class="capitalize">${GroupName}</span>
                 </p>
-                <p class="date">${new Date(activity.time).toLocaleString()}</p>
+                <p class="date">${new Date(time).toLocaleString()}</p>
                 <p class="amount-message ${isPaidByCurrentUser ? "get-back" : "owe"}">${amountMessage}</p>
             `;
             activityList.appendChild(card);
@@ -178,4 +184,5 @@
     getCurrentUser();
 </script>
 </body>
+
 </html>
