@@ -70,60 +70,12 @@
             color: #AAAAAA;
             font-size: 12px;
         }
-
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: #232323;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        .footer-icon {
-            color: #888;
-            text-align: center;
-        }
-
-        .footer-icon.active {
-            color: #57BB8A;
-        }
-
-        .footer-icon svg {
-            width: 24px;
-            height: 24px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Recent Activity</h1>
         <ul id="activityList"></ul>
-    </div>
-
-    <div class="footer">
-        <div class="footer-icon" id="friendsIcon">
-            <svg><!-- Friends icon --></svg>
-            <p>Friends</p>
-        </div>
-        <div class="footer-icon" id="groupsIcon">
-            <svg><!-- Groups icon --></svg>
-            <p>Groups</p>
-        </div>
-        <div class="footer-icon active" id="addIcon">
-            <svg><!-- Add icon --></svg>
-            <p>Add</p>
-        </div>
-        <div class="footer-icon" id="activityIcon">
-            <svg><!-- Activity icon --></svg>
-            <p>Activity</p>
-        </div>
-        <div class="footer-icon" id="accountIcon">
-            <svg><!-- Account icon --></svg>
-            <p>Account</p>
-        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
