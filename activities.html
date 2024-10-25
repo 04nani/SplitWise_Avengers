@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -85,7 +84,7 @@
 
     const databases = new Appwrite.Databases(client);
     const account = new Appwrite.Account(client);  // Use Account service to get the logged-in user's ID
-    const EXPENSES_COLLECTION_ID = "6702d327003c89118e37";  // Replace with your expenses collection ID
+    const EXPENSES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your expenses collection ID
     const DATABASE_ID = "66f9e43e00253528c7a8";
 
     const activityList = document.getElementById("activityList");
@@ -124,9 +123,11 @@
         }
 
         activities.forEach(activity => {
+            // Check and parse splitMembers if it's a string
+            const splitMembers = activity.splitMembers ? activity.splitMembers.split('##') : [];
+            const isCurrentUserInvolved = splitMembers.includes(currentUserId);
             const isPaidByCurrentUser = activity.PaidById === currentUserId;
-            const isCurrentUserInvolved = activity.splitMembers.includes(currentUserId);
-            const splitCount = activity.splitMembers.split('##').length;
+            const splitCount = splitMembers.length || 1;  // Default to 1 if splitMembers is empty
             let amountMessage = "";
 
             const individualAmount = parseFloat(activity.amount) / splitCount;
