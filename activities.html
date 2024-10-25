@@ -92,14 +92,28 @@
             .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
 
         const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
         const USERS_COLLECTION_ID = "66f9e45d002562334094";  // Replace with your users collection ID
         const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your activities collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
 
         const activityList = document.getElementById('activityList');
+        let currentUserId = null;  // Define currentUserId
 
         // Placeholder map to store fetched user names dynamically
         const userNamesCache = {};
+
+        // Fetch current user's ID
+        async function getCurrentUser() {
+            try {
+                const user = await account.get();
+                currentUserId = user.$id;  // Set currentUserId to logged-in user's ID
+                fetchActivities();  // Fetch activities after retrieving the user's ID
+            } catch (error) {
+                console.error('Error fetching current user:', error);
+                alert('Failed to fetch user data. Please make sure you are logged in.');
+            }
+        }
 
         // Fetch user name by ID
         async function fetchUserName(userId) {
@@ -169,8 +183,8 @@
             }
         }
 
-        // Initialize by fetching activities when the page loads
-        window.onload = fetchActivities;
+        // Initialize by fetching the current user when the page loads
+        window.onload = getCurrentUser;
     </script>
 </body>
 
