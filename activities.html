@@ -102,7 +102,7 @@
 
         const databases = new Appwrite.Databases(client);
         const account = new Appwrite.Account(client);  // Use Account service to get the logged-in user's ID
-        const USERS_COLLECTION_ID = "66f9e45d002562334094";  // Replace with your users collection ID
+        const USERS_COLLECTION_ID = "your-users-collection-id";  // Replace with your users collection ID
         const EXPENSES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your expenses collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
         
@@ -171,34 +171,44 @@
 
                 // Fetch the details of the user who paid
                 const paidByUser = await fetchUserDetails(expense.PaidById);
+                const paidByName = paidByUser ? paidByUser.name : 'Friend';
 
                 const isPaidByCurrentUser = expense.PaidById === currentUserId;
-                const isCurrentUserInvolved = expense.splitMember?.some(
-                    member => member.$id === currentUserId
-                ) || false;
-                const splitCount = expense.splitMember?.length || 0;
+                const splitMembers = expense.splitMembers ? expense.splitMembers.split('##') : [];
+                
+                // Calculate how much each member owes or gets back
+                const splitCount = splitMembers.length || 1;  // Default to 1 if splitMembers is empty
+                const amountPerMember = parseFloat(expense.amount) / splitCount;
 
                 let amountMessage = "";
+                let memberMessages = "";
 
-                if (isPaidByCurrentUser && isCurrentUserInvolved) {
-                    const individualAmount = parseFloat(expense.amount) / splitCount;
-                    const getback = parseFloat(expense.amount) - individualAmount;
-                    amountMessage = `You get back ₹${getback.toFixed(2)}`;
-                } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
-                    amountMessage = `You get back ₹${parseFloat(expense.amount).toFixed(2)}`;
-                } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
-                    const individualAmount = parseFloat(expense.amount) / splitCount;
-                    amountMessage = `You owe ₹${individualAmount.toFixed(2)}`;
-                } else {
-                    amountMessage = `Not involved`;
+                for (const member of splitMembers) {
+                    let [memberId, memberAmount] = member.split('$$');
+                    memberAmount = parseFloat(memberAmount);
+                    const memberDetails = await fetchUserDetails(memberId);
+
+                    if (memberDetails) {
+                        const memberName = memberDetails.name;
+                        if (memberId === currentUserId) {
+                            amountMessage = isPaidByCurrentUser
+                                ? `You get back ₹${(parseFloat(expense.amount) - amountPerMember).toFixed(2)}`
+                                : `You owe ₹${amountPerMember.toFixed(2)}`;
+                        } else {
+                            memberMessages += `${memberName} owes ₹${memberAmount.toFixed(2)}<br>`;
+                        }
+                    }
                 }
 
                 // Render the activity details
                 li.innerHTML = `
                     <div class="activity-details">
-                        <div class="activity-user">${isPaidByCurrentUser ? 'You' : (paidByUser ? paidByUser.name : 'Friend')} paid "${expense.description}"</div>
+                        <div class="activity-user">${isPaidByCurrentUser ? 'You' : paidByName} paid "${expense.description}"</div>
                         <div class="activity-description">
                             ${amountMessage}
+                        </div>
+                        <div class="activity-description">
+                            ${memberMessages}
                         </div>
                         <div class="activity-date">${expenseDate}</div>
                     </div>
