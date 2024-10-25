@@ -75,24 +75,67 @@
 
 <div id="activityList"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
 <script>
-    
-    function renderActivities() {
-        const activityList = document.getElementById("activityList");
+    // Appwrite configuration
+    const client = new Appwrite.Client();
+    client
+        .setEndpoint('https://cloud.appwrite.io/v1')  // Replace with your Appwrite endpoint
+        .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
+
+    const databases = new Appwrite.Databases(client);
+    const account = new Appwrite.Account(client);  // Use Account service to get the logged-in user's ID
+    const EXPENSES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your expenses collection ID
+    const DATABASE_ID = "66f9e43e00253528c7a8";
+
+    const activityList = document.getElementById("activityList");
+    let currentUserId = null;
+
+    // Fetch the logged-in user's details
+    async function getCurrentUser() {
+        try {
+            const user = await account.get();
+            currentUserId = user.$id;  // Logged-in user's ID
+            fetchActivities();  // Call to fetch activities after fetching the user
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+            alert('Failed to fetch user data. Please make sure you are logged in.');
+        }
+    }
+
+    // Fetch activities from Appwrite
+    async function fetchActivities() {
+        try {
+            const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID);
+            displayActivities(response.documents);
+        } catch (error) {
+            console.error('Error fetching activities:', error);
+            alert('Failed to fetch activities.');
+        }
+    }
+
+    // Display the activities as cards in the UI
+    function displayActivities(activities) {
+        activityList.innerHTML = ''; // Clear previous activities
+
+        if (activities.length === 0) {
+            activityList.innerHTML = '<p>No recent activities found.</p>';
+            return;
+        }
 
         activities.forEach(activity => {
-            const isPaidByCurrentUser = activity.PaidBy.$id === currentUser.id;
-            const isCurrentUserInvolved = activity.splitMember.some(member => member.$id === currentUser.id);
-            const splitCount = activity.splitMember.length;
+            const isPaidByCurrentUser = activity.PaidById === currentUserId;
+            const isCurrentUserInvolved = activity.splitMembers.includes(currentUserId);
+            const splitCount = activity.splitMembers.split('##').length;
             let amountMessage = "";
 
-            const individualAmount = parseFloat(activity.Amout) / splitCount;
+            const individualAmount = parseFloat(activity.amount) / splitCount;
 
             if (isPaidByCurrentUser && isCurrentUserInvolved) {
-                const getback = parseFloat(activity.Amout) - individualAmount;
+                const getback = parseFloat(activity.amount) - individualAmount;
                 amountMessage = `You get back ₹${getback.toFixed(2)}`;
             } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
-                amountMessage = `You get back ₹${activity.Amout}`;
+                amountMessage = `You get back ₹${activity.amount}`;
             } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
                 amountMessage = `You owe ₹${individualAmount.toFixed(2)}`;
             } else {
@@ -103,23 +146,35 @@
             card.className = "activity-card";
             card.innerHTML = `
                 <div class="activity-header">
-                    <span class="activity-title">${activity.Desc}</span>
+                    <span class="activity-title">${activity.description}</span>
                     <span class="amount ${isPaidByCurrentUser ? "amount-paid" : "amount-owed"}">
-                        ₹${activity.Amout}
+                        ₹${activity.amount}
                     </span>
                 </div>
                 <p class="activity-details">
-                    Added by <span class="${isPaidByCurrentUser ? "get-back" : ""}">${activity.PaidBy.name}</span> in 
-                    <span class="capitalize">${activity.Group.groupName}</span>
+                    Added by <span class="${isPaidByCurrentUser ? "get-back" : ""}">${activity.PaidByName}</span> in 
+                    <span class="capitalize">${activity.GroupName}</span>
                 </p>
-                <p class="date">${new Date(activity.Time).toLocaleString()}</p>
+                <p class="date">${new Date(activity.time).toLocaleString()}</p>
                 <p class="amount-message ${isPaidByCurrentUser ? "get-back" : "owe"}">${amountMessage}</p>
             `;
             activityList.appendChild(card);
         });
     }
 
-    renderActivities();
+    // Function to add a new expense and refresh the activity list
+    async function addExpense(expenseData) {
+        try {
+            await databases.createDocument(DATABASE_ID, EXPENSES_COLLECTION_ID, 'unique()', expenseData);
+            fetchActivities();  // Refresh the activities list after adding new expense
+        } catch (error) {
+            console.error('Error adding new expense:', error);
+            alert('Failed to add expense.');
+        }
+    }
+
+    // Initialize by fetching the current user and activities
+    getCurrentUser();
 </script>
 </body>
 </html>
