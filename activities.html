@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recent Activity</title>
     <style>
-        /* Styling */
         body {
             font-family: 'Open Sans', Arial, sans-serif;
             margin: 0;
@@ -88,16 +87,15 @@
 
         const databases = new Appwrite.Databases(client);
         const account = new Appwrite.Account(client);
-        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";  // Replace with your friends collection ID
         const USERS_COLLECTION_ID = "66f9e45d002562334094";  // Replace with your users collection ID
         const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your activities collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
 
         const activityList = document.getElementById('activityList');
         let currentUserId = null;
-        const namesCache = {};  // Unified cache for friend and user names
+        const userNamesCache = {};
 
-        // Fetch the current logged-in user's ID
+        // Get the current logged-in user's ID
         async function getCurrentUser() {
             try {
                 const user = await account.get();
@@ -109,55 +107,24 @@
             }
         }
 
-        // Fetch friend details from the friends collection
-        async function fetchFriendDetails(friendId) {
-            if (namesCache[friendId]) return namesCache[friendId];  // Check cache first
-
-            try {
-                const response = await databases.listDocuments(
-                    DATABASE_ID,
-                    FRIENDS_COLLECTION_ID,
-                    [Appwrite.Query.equal("accountId", friendId)]
-                );
-                if (response.documents.length > 0) {
-                    const friend = response.documents[0];
-                    namesCache[friendId] = friend.name;
-                    return friend.name;
-                }
-            } catch (error) {
-                console.error('Error fetching friend details:', error);
-            }
-            return null;  // Return null if friend is not found
-        }
-
-        // Fallback to fetch user details from the users collection if not found in friends
+        // Fetch user name by ID, with caching to reduce repeated calls
         async function fetchUserName(userId) {
-            if (namesCache[userId]) return namesCache[userId];  // Check cache first
-
+            if (userNamesCache[userId]) {
+                return userNamesCache[userId];
+            }
             try {
-                const response = await databases.listDocuments(
-                    DATABASE_ID,
-                    USERS_COLLECTION_ID,
-                    [Appwrite.Query.equal("$id", userId)]
-                );
-                if (response.documents.length > 0) {
-                    const user = response.documents[0];
-                    namesCache[userId] = user.name;
+                const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+                    Appwrite.Query.equal('$id', userId)
+                ]);
+                const user = response.documents[0];
+                if (user && user.name) {
+                    userNamesCache[userId] = user.name;
                     return user.name;
                 }
             } catch (error) {
                 console.error(`Error fetching name for user ID ${userId}:`, error);
             }
             return "Unknown User";  // Fallback if user not found
-        }
-
-        // Function to get the name, prioritizing friends collection over users collection
-        async function getNameById(userId) {
-            let name = await fetchFriendDetails(userId);
-            if (!name) {
-                name = await fetchUserName(userId);  // Fallback to users collection
-            }
-            return name;
         }
 
         // Fetch activities from the database
@@ -188,8 +155,9 @@
                     weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
                 });
 
-                const paidByName = await getNameById(activity.paidById);  // Get name using getNameById function
+                const paidByName = await fetchUserName(activity.paidById);  // Get name of user who paid
 
+                // Determine amount message
                 const isPaidByCurrentUser = activity.paidById === currentUserId;
                 const splitCount = (activity.splitMembers || "").split('##').length;
                 const individualAmount = parseFloat(activity.amount) / splitCount;
@@ -217,4 +185,5 @@
         window.onload = getCurrentUser;
     </script>
 </body>
+
 </html>
