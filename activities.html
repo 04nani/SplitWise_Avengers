@@ -3,110 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Page</title>
+    <title>Recent Activity</title>
     <style>
-        /* CSS Styling */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9; /* Background color */
-            color: #333;
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: 'Open Sans', Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
         }
 
-        #activity-page {
-            max-width: 600px;
-            width: 100%;
+        .container {
+            background-color: #1E1E1E;
             padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            margin: 20px auto;
         }
 
-        .activity-card {
-            background-color: #ffffff; /* Card background */
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        h1 {
+            text-align: center;
+            color: #57BB8A; /* Green title */
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: #2A2A2A; /* Dark background for each activity */
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 20px;
-        }
-
-        .activity-image {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
         }
 
         .activity-details {
             flex: 1;
         }
 
-        h2 {
-            font-size: 1.2em;
-            margin: 0;
-            color: #00509e; /* Primary color */
+        .activity-user {
+            font-weight: bold;
+            color: #57BB8A; /* Green for the user */
+        }
+
+        .activity-description {
+            margin: 5px 0;
+            color: #AAAAAA;
+        }
+
+        .activity-amount {
+            color: #FF6B6B; /* Red for amounts owed */
+            font-weight: bold;
+        }
+
+        .activity-paid {
+            color: #57BB8A; /* Green for paid amounts */
+            font-weight: bold;
         }
 
         .activity-date {
-            font-weight: bold;
-            color: #737373;
+            color: #AAAAAA;
+            font-size: 12px;
         }
 
-        #amount-message {
-            font-size: 1em;
-            color: #e63946; /* Highlight color */
+        .amount-message {
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .get-back {
+            color: #57BB8A;
+        }
+
+        .owe {
+            color: #FF6B6B;
         }
     </style>
 </head>
+
 <body>
-    <!-- HTML Structure -->
-    <div id="activity-page">
-        <div class="activity-card">
-            <img src="activity-image.jpg" alt="Activity" class="activity-image">
-            <div class="activity-details">
-                <h2>Activity Title</h2>
-                <p>Date: <span class="activity-date">MM/DD/YYYY</span></p>
-                <p id="amount-message">Amount Status</p>
-            </div>
-        </div>
+    <div class="container">
+        <h1>Recent Activity</h1>
+        <ul id="activityList"></ul>
     </div>
 
-    <!-- JavaScript for Functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            // Sample Data for demonstration
-            const activity = {
-                paidBy: "user123",
-                amount: 100,
-                splitMembers: ["user123", "user456", "user789"]
-            };
-            const currentUser = { id: "user123" };
+        // Appwrite configuration
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')  // Replace with your Appwrite endpoint
+            .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
 
-            // Logic to calculate amount message
-            const isPaidByCurrentUser = activity.paidBy === currentUser.id;
-            const isCurrentUserInvolved = activity.splitMembers.includes(currentUser.id);
-            const splitCount = activity.splitMembers.length;
-            let amountMessage = "";
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);  // Use Account service to get the logged-in user's ID
+        const EXPENSES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your expenses collection ID
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        
+        const activityList = document.getElementById('activityList');
+        let currentUserId = null;
 
-            if (isPaidByCurrentUser && isCurrentUserInvolved) {
-                const individualAmount = activity.amount / splitCount;
-                const getBack = activity.amount - individualAmount;
-                amountMessage = `You get back $${getBack.toFixed(2)}`;
-            } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
-                amountMessage = `You paid $${activity.amount}`;
-            } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
-                const individualAmount = activity.amount / splitCount;
-                amountMessage = `You owe $${individualAmount.toFixed(2)}`;
-            } else {
-                amountMessage = "Not involved in this expense";
+        // Fetch the logged-in user's details
+        async function getCurrentUser() {
+            try {
+                const user = await account.get();
+                currentUserId = user.$id;  // Logged-in user's ID
+                fetchUserExpenses();  // Call to fetch expenses after fetching the user
+            } catch (error) {
+                console.error('Error fetching current user:', error);
+                alert('Failed to fetch user data. Please make sure you are logged in.');
+            }
+        }
+
+        // Fetch expenses from the Appwrite database for the logged-in user
+        async function fetchUserExpenses() {
+            try {
+                if (!currentUserId) return;  // Ensure we have the user's ID
+
+                // Query to fetch all expenses (you can refine it later)
+                const response = await databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID);
+                
+                console.log("Expenses fetched:", response.documents); // Debugging statement
+                if (response.documents.length > 0) {
+                    await displayExpenses(response.documents);
+                } else {
+                    activityList.innerHTML = '<p>No recent expenses found.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching user expenses:', error);
+                alert('Failed to fetch user expenses.');
+            }
+        }
+
+        // Display the expenses as activities in the UI
+        async function displayExpenses(expenses) {
+            activityList.innerHTML = ''; // Clear previous activities
+
+            if (expenses.length === 0) {
+                activityList.innerHTML = '<p>No recent expenses found.</p>';
+                return;
             }
 
-            // Update the message in the HTML
-            document.getElementById("amount-message").innerText = amountMessage;
-        });
+            for (const expense of expenses) {
+                const li = document.createElement('li');
+                const expenseDate = new Date(expense.Time).toLocaleDateString('en-US', {
+                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                });
+
+                const isPaidByCurrentUser = expense.PaidById === currentUserId;
+                const isCurrentUserInvolved = expense.splitMember?.some(
+                    member => member.$id === currentUserId
+                ) || false;
+                const splitCount = expense.splitMember?.length || 0;
+
+                let amountMessage = "";
+
+                if (isPaidByCurrentUser && isCurrentUserInvolved) {
+                    const individualAmount = parseFloat(expense.Amout) / splitCount;
+                    const getback = parseFloat(expense.Amout) - individualAmount;
+                    amountMessage = `You get back ₹${getback.toFixed(2)}`;
+                } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
+                    amountMessage = `You get back ₹${parseFloat(expense.Amout).toFixed(2)}`;
+                } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
+                    const individualAmount = parseFloat(expense.Amout) / splitCount;
+                    amountMessage = `You owe ₹${individualAmount.toFixed(2)}`;
+                } else {
+                    amountMessage = `Not involved`;
+                }
+
+                // Render the activity details
+                li.innerHTML = `
+                    <div class="activity-details">
+                        <div class="activity-user">${isPaidByCurrentUser ? 'You' : 'Friend'} paid "${expense.Desc}"</div>
+                        <div class="activity-description">
+                            ${amountMessage}
+                        </div>
+                        <div class="activity-date">${expenseDate}</div>
+                    </div>
+                `;
+
+                activityList.appendChild(li);
+            }
+        }
+
+        // Call getCurrentUser when the page loads
+        window.onload = getCurrentUser;
     </script>
 </body>
+
 </html>
