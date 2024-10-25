@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -85,6 +86,14 @@
             Group: { groupName: 'Friends Group' },
             Time: "2024-10-22T12:00:00Z",
             splitMember: [{ $id: 'friendId' }, { $id: 'currentUserId' }]
+        },
+        {
+            Desc: "Groceries",
+            Amout: "500",
+            PaidBy: { $id: 'currentUserId', name: 'You' },
+            Group: { groupName: 'Household' },
+            Time: "2024-10-20T18:00:00Z",
+            splitMember: [{ $id: 'friendId' }, { $id: 'currentUserId' }]
         }
     ];
 
@@ -102,11 +111,11 @@
 
             if (isPaidByCurrentUser && isCurrentUserInvolved) {
                 const getback = parseFloat(activity.Amout) - individualAmount;
-                amountMessage = `You get back $${getback.toFixed(2)}`;
+                amountMessage = `You get back ₹${getback.toFixed(2)}`;
             } else if (isPaidByCurrentUser && !isCurrentUserInvolved) {
-                amountMessage = `You get back $${activity.Amout}`;
+                amountMessage = `You get back ₹${activity.Amout}`;
             } else if (!isPaidByCurrentUser && isCurrentUserInvolved) {
-                amountMessage = `You owe $${individualAmount.toFixed(2)}`;
+                amountMessage = `You owe ₹${individualAmount.toFixed(2)}`;
             } else {
                 amountMessage = `Not involved`;
             }
@@ -117,7 +126,7 @@
                 <div class="activity-header">
                     <span class="activity-title">${activity.Desc}</span>
                     <span class="amount ${isPaidByCurrentUser ? "amount-paid" : "amount-owed"}">
-                        &#8377;${activity.Amout}
+                        ₹${activity.Amout}
                     </span>
                 </div>
                 <p class="activity-details">
