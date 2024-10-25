@@ -76,28 +76,7 @@
 <div id="activityList"></div>
 
 <script>
-    // Mock current user and activity data for testing
-    const currentUser = { id: 'currentUserId', name: 'Current User' };
-    const activities = [
-        {
-            Desc: "Dinner at Pizza Place",
-            Amout: "1500",
-            PaidBy: { $id: 'friendId', name: 'Friend' },
-            Group: { groupName: 'Friends Group' },
-            Time: "2024-10-22T12:00:00Z",
-            splitMember: [{ $id: 'friendId' }, { $id: 'currentUserId' }]
-        },
-        {
-            Desc: "Groceries",
-            Amout: "500",
-            PaidBy: { $id: 'currentUserId', name: 'You' },
-            Group: { groupName: 'Household' },
-            Time: "2024-10-20T18:00:00Z",
-            splitMember: [{ $id: 'friendId' }, { $id: 'currentUserId' }]
-        }
-    ];
-
-    // Function to render activities
+    
     function renderActivities() {
         const activityList = document.getElementById("activityList");
 
