@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,31 +41,26 @@
             padding: 10px;
             border-radius: 8px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .activity-details {
-            flex: 1;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .activity-user {
             font-weight: bold;
-            color: #57BB8A; /* Green user name */
+            color: #57BB8A; /* Green for user name */
         }
 
         .activity-description {
-            margin: 5px 0;
-            color: #AAAAAA; /* Lighter gray for description */
+            color: #AAAAAA;
         }
 
         .activity-amount {
-            color: #FF6B6B; /* Red for owed amounts */
+            color: #FF6B6B; /* Red for amounts owed */
             font-weight: bold;
         }
 
         .activity-paid {
-            color: #57BB8A; /* Green for paid amounts */
+            color: #57BB8A; /* Green for amounts paid */
             font-weight: bold;
         }
 
@@ -93,31 +87,28 @@
 
         const databases = new Appwrite.Databases(client);
         const account = new Appwrite.Account(client);
-        const USERS_COLLECTION_ID = "66f9e45d002562334094";  // Replace with your users collection ID
+        const USERS_COLLECTION_ID = "your-users-collection-id";  // Replace with your users collection ID
         const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your activities collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
 
         const activityList = document.getElementById('activityList');
-        let currentUserId = null;  // Define currentUserId
-
-        // Placeholder map to store fetched user names dynamically
+        let currentUserId = null;
         const userNamesCache = {};
 
-        // Fetch current user's ID
+        // Get the current logged-in user's ID
         async function getCurrentUser() {
             try {
                 const user = await account.get();
-                currentUserId = user.$id;  // Set currentUserId to logged-in user's ID
-                fetchActivities();  // Fetch activities after retrieving the user's ID
+                currentUserId = user.$id;
+                fetchActivities();  // Fetch activities after getting user ID
             } catch (error) {
                 console.error('Error fetching current user:', error);
-                alert('Failed to fetch user data. Please make sure you are logged in.');
+                alert('Failed to fetch user data.');
             }
         }
 
-        // Fetch user name by ID
+        // Fetch user name by ID, with caching to reduce repeated calls
         async function fetchUserName(userId) {
-            // Check if user name is already in cache
             if (userNamesCache[userId]) {
                 return userNamesCache[userId];
             }
@@ -143,7 +134,7 @@
                 displayActivities(response.documents);
             } catch (error) {
                 console.error('Error fetching activities:', error);
-                alert('Failed to fetch activities');
+                alert('Failed to fetch activities.');
             }
         }
 
@@ -161,22 +152,29 @@
                 activityItem.className = 'activity-item';
 
                 const activityDate = new Date(activity.time).toLocaleDateString('en-US', {
-                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                    weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
                 });
 
-                const paidByName = await fetchUserName(activity.paidById);  // Get paidBy name dynamically
-                const amountClass = activity.amount < 0 ? 'activity-amount' : 'activity-paid';
+                const paidByName = await fetchUserName(activity.paidById);  // Get name of user who paid
 
-                const amountMessage = activity.paidById === currentUserId
-                    ? `You get back <span class="${amountClass}">$${Math.abs(activity.amount)}</span>`
-                    : `You owe <span class="${amountClass}">$${Math.abs(activity.amount)}</span>`;
+                // Determine amount message
+                const isPaidByCurrentUser = activity.paidById === currentUserId;
+                const splitCount = (activity.splitMembers || "").split('##').length;
+                const individualAmount = parseFloat(activity.amount) / splitCount;
+
+                let amountMessage = "";
+                if (isPaidByCurrentUser) {
+                    amountMessage = `You get back ₹${(parseFloat(activity.amount) - individualAmount).toFixed(2)}`;
+                } else {
+                    amountMessage = `You owe ₹${individualAmount.toFixed(2)}`;
+                }
 
                 activityItem.innerHTML = `
-                    <div class="activity-details">
-                        <span class="activity-user">${paidByName} added "${activity.description}"</span>
-                        <div class="activity-description">${amountMessage}</div>
-                        <div class="activity-date">${activityDate}</div>
+                    <div class="activity-user">
+                        ${isPaidByCurrentUser ? 'You' : paidByName} added "${activity.description}" in "${activity.groupId || 'N/A'}"
                     </div>
+                    <div class="activity-description">${amountMessage}</div>
+                    <div class="activity-date">${activityDate}</div>
                 `;
 
                 activityList.appendChild(activityItem);
