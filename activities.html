@@ -92,21 +92,35 @@
             .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
 
         const databases = new Appwrite.Databases(client);
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";  // Replace with your users collection ID
         const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your activities collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
 
         const activityList = document.getElementById('activityList');
 
-        // Mock user mapping of user IDs to names
-        const userNames = {
-            'userId1': 'Alice',
-            'userId2': 'Bob',
-            'userId3': 'Charlie',  // Example names
-            'userId4': 'You'       // Use 'You' for the logged-in user
-        };
+        // Placeholder map to store fetched user names dynamically
+        const userNamesCache = {};
 
-        // Logged-in user ID (in a real scenario, fetch this from Appwrite)
-        const currentUserId = 'userId4';
+        // Fetch user name by ID
+        async function fetchUserName(userId) {
+            // Check if user name is already in cache
+            if (userNamesCache[userId]) {
+                return userNamesCache[userId];
+            }
+            try {
+                const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+                    Appwrite.Query.equal('$id', userId)
+                ]);
+                const user = response.documents[0];
+                if (user && user.name) {
+                    userNamesCache[userId] = user.name;
+                    return user.name;
+                }
+            } catch (error) {
+                console.error(`Error fetching name for user ID ${userId}:`, error);
+            }
+            return "Unknown User";  // Fallback if user not found
+        }
 
         // Fetch activities from the database
         async function fetchActivities() {
@@ -120,7 +134,7 @@
         }
 
         // Display the activities in the UI
-        function displayActivities(activities) {
+        async function displayActivities(activities) {
             activityList.innerHTML = ''; // Clear previous activities
 
             if (activities.length === 0) {
@@ -128,7 +142,7 @@
                 return;
             }
 
-            activities.forEach(activity => {
+            for (const activity of activities) {
                 const activityItem = document.createElement('div');
                 activityItem.className = 'activity-item';
 
@@ -136,7 +150,7 @@
                     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
                 });
 
-                const paidByName = userNames[activity.paidById] || 'Unknown User';
+                const paidByName = await fetchUserName(activity.paidById);  // Get paidBy name dynamically
                 const amountClass = activity.amount < 0 ? 'activity-amount' : 'activity-paid';
 
                 const amountMessage = activity.paidById === currentUserId
@@ -152,10 +166,10 @@
                 `;
 
                 activityList.appendChild(activityItem);
-            });
+            }
         }
 
-        // Call fetchActivities when the page loads
+        // Initialize by fetching activities when the page loads
         window.onload = fetchActivities;
     </script>
 </body>
