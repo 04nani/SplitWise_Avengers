@@ -97,6 +97,17 @@
 
         const activityList = document.getElementById('activityList');
 
+        // Mock user mapping of user IDs to names
+        const userNames = {
+            'userId1': 'Alice',
+            'userId2': 'Bob',
+            'userId3': 'Charlie',  // Example names
+            'userId4': 'You'       // Use 'You' for the logged-in user
+        };
+
+        // Logged-in user ID (in a real scenario, fetch this from Appwrite)
+        const currentUserId = 'userId4';
+
         // Fetch activities from the database
         async function fetchActivities() {
             try {
@@ -125,12 +136,17 @@
                     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
                 });
 
+                const paidByName = userNames[activity.paidById] || 'Unknown User';
                 const amountClass = activity.amount < 0 ? 'activity-amount' : 'activity-paid';
+
+                const amountMessage = activity.paidById === currentUserId
+                    ? `You get back <span class="${amountClass}">$${Math.abs(activity.amount)}</span>`
+                    : `You owe <span class="${amountClass}">$${Math.abs(activity.amount)}</span>`;
 
                 activityItem.innerHTML = `
                     <div class="activity-details">
-                        <span class="activity-user">${activity.paidById} added "${activity.description}"</span>
-                        <div class="activity-description">You owe <span class="${amountClass}">$${Math.abs(activity.amount)}</span></div>
+                        <span class="activity-user">${paidByName} added "${activity.description}"</span>
+                        <div class="activity-description">${amountMessage}</div>
                         <div class="activity-date">${activityDate}</div>
                     </div>
                 `;
