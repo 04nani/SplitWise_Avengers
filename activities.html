@@ -89,6 +89,7 @@
         const account = new Appwrite.Account(client);
         const USERS_COLLECTION_ID = "66f9e45d002562334094";  // Replace with your users collection ID
         const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your activities collection ID
+        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";  // Replace with your friends collection ID
         const DATABASE_ID = "66f9e43e00253528c7a8";
 
         const activityList = document.getElementById('activityList');
@@ -107,7 +108,7 @@
             }
         }
 
-        // Fetch user name by ID, with caching to reduce repeated calls
+        // Fetch user or friend name by ID, with caching to reduce repeated calls
         async function fetchUserName(userId) {
             if (userNamesCache[userId]) {
                 return userNamesCache[userId];
@@ -116,10 +117,20 @@
                 const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
                     Appwrite.Query.equal('$id', userId)
                 ]);
-                const user = response.documents[0];
-                if (user && user.name) {
+                if (response.documents.length > 0) {
+                    const user = response.documents[0];
                     userNamesCache[userId] = user.name;
                     return user.name;
+                } else {
+                    // Try fetching from friends collection if not found in users
+                    const friendResponse = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+                        Appwrite.Query.equal("accountId", userId)
+                    ]);
+                    if (friendResponse.documents.length > 0) {
+                        const friend = friendResponse.documents[0];
+                        userNamesCache[userId] = friend.name;
+                        return friend.name;
+                    }
                 }
             } catch (error) {
                 console.error(`Error fetching name for user ID ${userId}:`, error);
@@ -185,5 +196,4 @@
         window.onload = getCurrentUser;
     </script>
 </body>
-
 </html>
