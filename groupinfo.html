@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Settlements</title>
+    <style>
+        table {
+            width: 50%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align: center;">Group Information</h2>
+    <div id="groupInfo" style="text-align: center;"></div>
+
+    <table id="settlementTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Amount</th>
+                <th>Settle Up</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be added dynamically here -->
+        </tbody>
+    </table>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
+
+
+    
+    <script>
+ const { Client, Account } = Appwrite;
+
+const client = new Client()
+    .setEndpoint('https://cloud.appwrite.io/v1')
+    .setProject('66f9c641001dbbd4bb66');
+
+
+var myapp=async function() {
+
+
+const databases = new Appwrite.Databases(client);
+        // Function to get URL parameters
+        function getParameterByName(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Retrieve the groupid from the URL
+        const groupId = getParameterByName('groupid');
+        const groupInfoDiv = document.getElementById('groupInfo');
+
+        // Display group ID
+        if (groupId) {
+            groupInfoDiv.innerHTML = `<p>Group Name: <strong>${getParameterByName('name')}</strong></p>`;
+        } else {
+            groupInfoDiv.innerHTML = `<p>No Group ID found in the URL.</p>`;
+        }
+
+        // Sample data
+        // const  = [
+        //     { name: "Alice", amount: "$100" },
+        //     { name: "Bob", amount: "$50" },
+        //     { name: "Charlie", amount: "$75" }
+        // ];
+
+
+
+        const sampleData = await databases.listDocuments(
+  "66f9e43e00253528c7a8", // Replace with your database ID
+  "6702c39100338b173d15", // Collection ID for 'FriendCollections'
+  [Appwrite.Query.equal("groupId", groupId)]
+);
+
+// Create a map to store total amounts for each paidById
+const amountMap = {};
+
+// Iterate over each item in the sampleData
+for (const element of sampleData.documents) {
+  const { paidById, amount } = element;
+
+  // Accumulate the amount for each paidById
+  if (amountMap[paidById]) {
+    amountMap[paidById] += amount;
+  } else {
+    amountMap[paidById] = amount;
+  }
+}
+
+// Initialize an array to store the combined results
+const combinedData = [];
+
+// Iterate over the amountMap to fetch user details and combine with total amounts
+for (const paidById in amountMap) {
+  if (amountMap.hasOwnProperty(paidById)) {
+    // Fetch the user data based on paidById
+    const friendsResponse = await databases.listDocuments(
+      "66f9e43e00253528c7a8", // Database ID
+      "66f9e45d002562334094", // Collection ID for the 'users' collection
+      [Appwrite.Query.equal("accountId", paidById)] // Query by accountId field
+    );
+
+    // Check if user data is found
+    const userData = friendsResponse.documents.length > 0 ? friendsResponse.documents[0] : null;
+
+    // Combine the total amount with user data
+    combinedData.push({
+      user: userData, // Add the user data
+      totalAmountPaid: amountMap[paidById] // Add the total amount paid by this user
+    });
+  }
+}
+
+
+
+  console.log(combinedData);
+
+
+
+
+
+
+
+
+
+        // Get table body element
+        const tableBody = document.querySelector("#settlementTable tbody");
+
+        // // Function to add rows dynamically
+        function addRow(data) {
+
+            const row = document.createElement('tr');
+
+            const nameCell = document.createElement('td');
+            nameCell.textContent = data["user"]["name"];
+            row.appendChild(nameCell);
+
+            const amountCell = document.createElement('td');
+            amountCell.textContent = data["totalAmountPaid"];
+            row.appendChild(amountCell);
+
+            const buttonCell2 = document.createElement('td');
+            const chatButton = document.createElement('button');
+            chatButton.textContent = "Chat Now";
+            chatButton.onclick = function () {
+         
+            };
+            buttonCell2.appendChild(chatButton);
+
+
+
+            //////////// chat button 
+
+
+            const buttonCell = document.createElement('td');
+            const settleButton = document.createElement('button');
+            settleButton.textContent = "Settle Up";
+            settleButton.onclick = function () {
+                alert(`${data.name} has settled up!`);
+            };
+            buttonCell.appendChild(settleButton);
+
+
+            row.appendChild(buttonCell);
+            row.appendChild(buttonCell2);
+
+
+            tableBody.appendChild(row);
+        }
+
+        // // Add each row to the table
+        combinedData.forEach(addRow);
+   
+}
+
+myapp();
+   
+   
+   </script>
+
+</body>
+</html>
