@@ -7,13 +7,13 @@ const databases = new Appwrite.Databases(client);
 // Function to update the friends list
 function updateFriendsList() {
   console.log("Updating Friends List");
-  getFriendsData(); 
+  getFriendsData();
 }
 
 // Function to update the groups list
 function updateGroupsList() {
   console.log("Updating Groups List");
-  getGroups(); 
+  getGroups();
 }
 
 
@@ -24,12 +24,17 @@ const getFriendsData = async () => {
 
     const user_1 = await account.get();
     console.log(`"user id : ${user_1.$id}"`);
-    
+
     const response = await databases.listDocuments(
       "66f9e43e00253528c7a8",
       "66fc597e0027848acf57",
-      [Appwrite.Query.equal("userId", user_1.$id),
-       Appwrite.Query.equal("status", "accepted")]
+      [
+        Appwrite.Query.equal('status', 'accepted'),
+        Appwrite.Query.or([
+          Appwrite.Query.equal('userId', user_1.$id),
+          Appwrite.Query.equal('friendId', user_1.$id)
+        ])
+      ]
     );
 
     console.log(response.documents);
@@ -39,7 +44,7 @@ const getFriendsData = async () => {
     resp.forEach(async (element) => {
       if (user_1.$id != element.friendId && user_friendslist.indexOf(element.friendId) == -1) {
         user_friendslist.push(element.friendId);
-        
+
         try {
           const friendsResponse = await databases.listDocuments(
             "66f9e43e00253528c7a8",
@@ -54,6 +59,10 @@ const getFriendsData = async () => {
             const liElement = document.createElement("li");
             liElement.className = "list-item";
             liElement.setAttribute("data-friend-id", element.friendId);
+
+            liElement.onclick = () => {
+              window.location.href = `/displayDetails/friend.html?friendId=${element.friendId}`;
+            };
 
             const contentDiv = document.createElement("div");
             contentDiv.className = "item-content";
