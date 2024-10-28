@@ -9,7 +9,7 @@
             font-family: 'Open Sans', Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #121212; /* Dark background */
+            background-color: #121212; 
             color: #FFFFFF;
         }
 
@@ -17,14 +17,14 @@
             max-width: 800px;
             margin: 20px auto;
             padding: 20px;
-            background-color: #1E1E1E; /* Dark container */
+            background-color: #1E1E1E; 
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
 
         h2 {
             text-align: center;
-            color: #57BB8A; /* Green title color */
+            color: #57BB8A;
             font-size: 24px;
             margin-bottom: 20px;
         }
@@ -36,7 +36,7 @@
         }
 
         .activity-item {
-            background-color: #2A2A2A; /* Slightly lighter for contrast */
+            background-color: #2A2A2A;
             border: 1px solid #3E3E3E;
             padding: 10px;
             border-radius: 8px;
@@ -47,7 +47,7 @@
 
         .activity-user {
             font-weight: bold;
-            color: #57BB8A; /* Green for user name */
+            color: #57BB8A; 
         }
 
         .activity-description {
@@ -55,12 +55,12 @@
         }
 
         .activity-amount {
-            color: #FF6B6B; /* Red for amounts owed */
+            color: #FF6B6B;
             font-weight: bold;
         }
 
         .activity-paid {
-            color: #57BB8A; /* Green for amounts paid */
+            color: #57BB8A;
             font-weight: bold;
         }
 
@@ -77,23 +77,25 @@
         <div id="activityList" class="activity-list"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
     <script>
         // Appwrite configuration
         const client = new Appwrite.Client();
         client
-            .setEndpoint('https://cloud.appwrite.io/v1')  // Replace with your Appwrite endpoint
-            .setProject('66f9c641001dbbd4bb66');  // Replace with your project ID
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
 
         const databases = new Appwrite.Databases(client);
         const account = new Appwrite.Account(client);
-        const USERS_COLLECTION_ID = "66f9e45d002562334094";  // Replace with your users collection ID
-        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";  // Replace with your activities collection ID
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
         const DATABASE_ID = "66f9e43e00253528c7a8";
+        const GROUPS_COLLECTION_ID = "66ffed4e001b7299c97c";
 
         const activityList = document.getElementById('activityList');
         let currentUserId = null;
         const userNamesCache = {};
+        const groupNamesCache = {};
 
         // Get the current logged-in user's ID
         async function getCurrentUser() {
@@ -114,7 +116,7 @@
             }
             try {
                 const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
-                    Appwrite.Query.equal('$id', userId)
+                    Appwrite.Query.equal('accountId', userId)
                 ]);
                 const user = response.documents[0];
                 if (user && user.name) {
@@ -124,13 +126,44 @@
             } catch (error) {
                 console.error(`Error fetching name for user ID ${userId}:`, error);
             }
-            return "Unknown User";  // Fallback if user not found
+            return "Unknown User";
+        }
+
+        async function fetchGroupNames(groupId){
+            if (groupNamesCache[groupId]) {
+                return groupNamesCache[groupId];
+            }
+            try {
+                const response = await databases.listDocuments(DATABASE_ID, GROUPS_COLLECTION_ID, [
+                    Appwrite.Query.equal("$id", groupId)
+                ]);
+                const group = response.documents[0];
+                if (group && group.groupName) {
+                    groupNamesCache[groupId] = group.groupName;
+                    return group.groupName;
+                }
+            } catch (error) {
+                console.error(`Error fetching name for group ID ${groupId}:`, error);
+            }
+            return "Unknown Group";
         }
 
         // Fetch activities from the database
         async function fetchActivities() {
             try {
-                const response = await databases.listDocuments(DATABASE_ID, ACTIVITIES_COLLECTION_ID);
+
+                const response = await databases.listDocuments(
+                    DATABASE_ID, 
+                    ACTIVITIES_COLLECTION_ID,
+                    [
+                        Appwrite.Query.or([
+                            Appwrite.Query.equal('paidById', currentUserId),
+                            Appwrite.Query.contains('splitMembers', currentUserId)
+                        ]),
+                        Appwrite.Query.orderDesc('$createdAt')
+                    ]
+                );
+                
                 displayActivities(response.documents);
             } catch (error) {
                 console.error('Error fetching activities:', error);
@@ -140,7 +173,7 @@
 
         // Display the activities in the UI
         async function displayActivities(activities) {
-            activityList.innerHTML = ''; // Clear previous activities
+            activityList.innerHTML  = '';
 
             if (activities.length === 0) {
                 activityList.innerHTML = '<p>No recent activities found.</p>';
@@ -148,6 +181,7 @@
             }
 
             for (const activity of activities) {
+
                 const activityItem = document.createElement('div');
                 activityItem.className = 'activity-item';
 
@@ -155,24 +189,50 @@
                     weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
                 });
 
-                const paidByName = await fetchUserName(activity.paidById);  // Get name of user who paid
-
-                // Determine amount message
+                const paidByName = await fetchUserName(activity.paidById);
                 const isPaidByCurrentUser = activity.paidById === currentUserId;
-                const splitCount = (activity.splitMembers || "").split('##').length;
-                const individualAmount = parseFloat(activity.amount) / splitCount;
-
+                
                 let amountMessage = "";
-                if (isPaidByCurrentUser) {
-                    amountMessage = `You get back ₹${(parseFloat(activity.amount) - individualAmount).toFixed(2)}`;
+                let activityDescription = "";
+
+                if (activity.groupId) {
+                    const splits = (activity.splitMembers || "").split('##').map(split => {
+                        const [id, amount] = split.split('$$');
+                        return { id:id, amount: parseFloat(amount) };
+                    });
+                    console.log(splits);
+                    const individualAmount = splits.reduce((total, split) => {
+                        if (split.id !== currentUserId) {
+                            return total + split.amount;
+                        }
+                        return total;
+                    }, 0);
+
+                    if (isPaidByCurrentUser) {
+                        amountMessage = `You get back $${individualAmount.toFixed(2)}`;
+                    } else {
+                        amountMessage = `You owe $${splits.find(split => split.id === currentUserId).amount.toFixed(2)}`;
+                    }
+
+                    activityDescription = `
+                        <div class="activity-user">
+                            ${isPaidByCurrentUser ? 'You' : paidByName} added "${activity.description}" in "${await fetchGroupNames(activity.groupId)}"
+                        </div>`;
                 } else {
-                    amountMessage = `You owe ₹${individualAmount.toFixed(2)}`;
+                    if (isPaidByCurrentUser) {
+                        amountMessage = `You paid $${parseFloat(activity.amount).toFixed(2)}`;
+                    } else {
+                        amountMessage = `You owe $${parseFloat(activity.amount).toFixed(2)}`;
+                    }
+
+                    activityDescription = `
+                        <div class="activity-user">
+                            ${isPaidByCurrentUser ? 'You paid' : `${paidByName} paid`} "${activity.description}"
+                        </div>`;
                 }
 
                 activityItem.innerHTML = `
-                    <div class="activity-user">
-                        ${isPaidByCurrentUser ? 'You' : paidByName} added "${activity.description}" in "${activity.groupId || 'N/A'}"
-                    </div>
+                    ${activityDescription}
                     <div class="activity-description">${amountMessage}</div>
                     <div class="activity-date">${activityDate}</div>
                 `;

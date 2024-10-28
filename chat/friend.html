@@ -472,11 +472,10 @@
             button.disabled = true;
 
             try {
-                // Use Appwrite.ID for generating unique ID
                 const message = await databases.createDocument(
                     DATABASE_ID,
                     MESSAGES_COLLECTION_ID,
-                    Appwrite.ID.unique(),  // Fixed: Using Appwrite.ID instead of just ID
+                    Appwrite.ID.unique(),
                     {
                         content: content,
                         senderId: currentUserId,
@@ -484,7 +483,6 @@
                     }
                 );
 
-                // Optimistically display the message
                 displayMessages([message], false);
                 input.value = '';
                 input.focus();
