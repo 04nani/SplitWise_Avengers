@@ -19,103 +19,85 @@ function updateGroupsList() {
 
 const getFriendsData = async () => {
   try {
-    const friendsListContainer = document.querySelector('ul[role="list"].max-w-sm');
+    const friendsListContainer = document.querySelector('ul[role="list"]');
     friendsListContainer.innerHTML = '';
 
-    const user_1 = await account.get(); // Get current user
+    const user_1 = await account.get();
     console.log(`"user id : ${user_1.$id}"`);
     
-    console.log("Updating Friends List");
-
     const response = await databases.listDocuments(
-      "66f9e43e00253528c7a8", // Database ID
-      "66fc597e0027848acf57", // Collection ID for 'FriendCollections'
+      "66f9e43e00253528c7a8",
+      "66fc597e0027848acf57",
       [Appwrite.Query.equal("userId", user_1.$id),
-       Appwrite.Query.equal("status","accepted")
-      ] // Query by current user's ID
+       Appwrite.Query.equal("status", "accepted")]
     );
 
-    // Log the retrieved data to the console
     console.log(response.documents);
-
     const resp = response.documents;
     user_friendslist = [];
 
     resp.forEach(async (element) => {
-      // Ensure the friend list doesn't include the current user
       if (user_1.$id != element.friendId && user_friendslist.indexOf(element.friendId) == -1) {
         user_friendslist.push(element.friendId);
         
         try {
           const friendsResponse = await databases.listDocuments(
-            "66f9e43e00253528c7a8", // Database ID
-            "66f9e45d002562334094", // Collection ID for the 'users' collection
-            [Appwrite.Query.equal("accountId", element.friendId)] // Query by accountId field
+            "66f9e43e00253528c7a8",
+            "66f9e45d002562334094",
+            [Appwrite.Query.equal("accountId", element.friendId)]
           );
 
-          // Get the friend's details
           const friends = friendsResponse.documents;
           console.log(friends);
 
-          // Continue with DOM manipulation and rendering
           if (friends.length > 0) {
-          const liElement = document.createElement("li");
-          liElement.className = "py-3 sm:py-4";
-            liElement.setAttribute("data-friend-id", element.friendId); // Add a data attribute for friend ID
+            const liElement = document.createElement("li");
+            liElement.className = "list-item";
+            liElement.setAttribute("data-friend-id", element.friendId);
 
-          const flexDiv = document.createElement("div");
-          flexDiv.className = "flex items-center space-x-3 rtl:space-x-reverse";
+            const contentDiv = document.createElement("div");
+            contentDiv.className = "item-content";
 
-          const imgDiv = document.createElement("div");
-          imgDiv.className = "flex-shrink-0";
+            const imgElement = document.createElement("img");
+            imgElement.className = "avatar";
+            imgElement.src = "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
+            imgElement.alt = friends[0].name;
 
-          const imgElement = document.createElement("img");
-          imgElement.className = "w-8 h-8 rounded-full";
-          imgElement.src = "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
-          imgElement.alt = friends[0].name;
+            const detailsDiv = document.createElement("div");
+            detailsDiv.className = "item-details";
 
-          imgDiv.appendChild(imgElement);
+            const nameParagraph = document.createElement("p");
+            nameParagraph.className = "item-name";
+            nameParagraph.textContent = friends[0].name;
 
-          const contentDiv = document.createElement("div");
-          contentDiv.className = "flex-1 min-w-0";
+            const emailParagraph = document.createElement("p");
+            emailParagraph.className = "item-subtitle";
+            emailParagraph.textContent = friends[0].email;
 
-          const nameParagraph = document.createElement("p");
-          nameParagraph.className = "text-sm font-semibold text-white truncate dark:text-white";
-          nameParagraph.textContent = friends[0].name;
+            detailsDiv.appendChild(nameParagraph);
+            detailsDiv.appendChild(emailParagraph);
 
-          const emailParagraph = document.createElement("p");
-          emailParagraph.className = "text-sm text-gray-400 truncate dark:text-gray-400";
-          emailParagraph.textContent = friends[0].email;
+            const statusBadge = document.createElement("span");
+            const statusDot = document.createElement("span");
 
-          contentDiv.appendChild(nameParagraph);
-          contentDiv.appendChild(emailParagraph);
+            if (element.status == "accepted") {
+              statusBadge.className = "status-badge accepted";
+              statusDot.className = "status-dot accepted";
+            } else {
+              statusBadge.className = "status-badge pending";
+              statusDot.className = "status-dot pending";
+            }
 
-          const availabilitySpan = document.createElement("span");
-          const dotSpan = document.createElement("span");
+            statusBadge.appendChild(statusDot);
+            statusBadge.appendChild(document.createTextNode(element.status));
 
-          if (element.status == "accepted") {
-            availabilitySpan.className =
-              "inline-flex items-center bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300";
-            dotSpan.className = "w-2 h-2 me-1 bg-green-500 rounded-full";
-          } else {
-            availabilitySpan.className =
-              "inline-flex items-center bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300";
-            dotSpan.className = "w-2 h-2 me-1 bg-red-500 rounded-full";
+            contentDiv.appendChild(imgElement);
+            contentDiv.appendChild(detailsDiv);
+            contentDiv.appendChild(statusBadge);
+
+            liElement.appendChild(contentDiv);
+            friendsListContainer.appendChild(liElement);
           }
-
-          availabilitySpan.appendChild(dotSpan);
-          availabilitySpan.appendChild(document.createTextNode(element.status));
-
-          flexDiv.appendChild(imgDiv);
-          flexDiv.appendChild(contentDiv);
-          flexDiv.appendChild(availabilitySpan);
-
-          liElement.appendChild(flexDiv);
-          document.querySelector("ul").appendChild(liElement);
-
-         } else {
-          console.warn("No details found for friendId:", element.friendId);
-        }
         } catch (error) {
           console.error("Failed to retrieve friend details:", error);
         }
@@ -126,81 +108,64 @@ const getFriendsData = async () => {
   }
 };
 
-
 const getGroups = async () => {
   try {
-// Clear the existing list
-      const groupsListContainer = document.querySelector('ul[role="list"].max-w-sm');
-      groupsListContainer.innerHTML = '';
+    const groupsListContainer = document.querySelector('ul[role="list"]');
+    groupsListContainer.innerHTML = '';
 
-      console.log("Updating Groups List");
+    console.log("Updating Groups List");
     const response = await databases.listDocuments(
-          "66f9e43e00253528c7a8", // Database ID
-          "66ffef8e000e9a26e8bf", // Collection ID for 'Group Members'
-          [Appwrite.Query.equal("memberId", "66fc9df006e60a5356bc")] // Replace with the current user ID if available
+      "66f9e43e00253528c7a8",
+      "66ffef8e000e9a26e8bf",
+      [Appwrite.Query.equal("memberId", "66fc9df006e60a5356bc")]
     );
 
-    // Log the retrieved data to the console
     console.log(response.documents);
-      const resp = response.documents;
+    const resp = response.documents;
 
     resp.forEach(async (element) => {
       try {
-              const groupResponse = await databases.listDocuments(
-                  "66f9e43e00253528c7a8", // Database ID
-                  "66ffed4e001b7299c97c", // Collection ID for the 'Groups' collection
+        const groupResponse = await databases.listDocuments(
+          "66f9e43e00253528c7a8",
+          "66ffed4e001b7299c97c",
           [Appwrite.Query.equal("$id", element.groupid)]
         );
 
-              const groups = groupResponse.documents;
-              console.log(groups);
+        const groups = groupResponse.documents;
+        console.log(groups);
 
-              if (groups.length > 0) {
-                  // Create <li> element for each group
-        const liElement = document.createElement("li");
-        liElement.className = "py-3 sm:py-4";
+        if (groups.length > 0) {
+          const liElement = document.createElement("li");
+          liElement.className = "list-item";
 
-        const flexDiv = document.createElement("div");
-        flexDiv.className = "flex items-center space-x-3 rtl:space-x-reverse";
+          const contentDiv = document.createElement("div");
+          contentDiv.className = "item-content";
 
-        const imgDiv = document.createElement("div");
-        imgDiv.className = "flex-shrink-0";
+          const imgElement = document.createElement("img");
+          imgElement.className = "avatar";
+          imgElement.src = "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
+          imgElement.alt = groups[0]["groupName"];
 
-        const imgElement = document.createElement("img");
-        imgElement.className = "w-8 h-8 rounded-full";
-                  imgElement.src = "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
-                  imgElement.alt = groups[0]["groupName"];
+          const detailsDiv = document.createElement("div");
+          detailsDiv.className = "item-details";
 
-                  imgDiv.appendChild(imgElement);
+          const nameParagraph = document.createElement("p");
+          nameParagraph.className = "item-name";
+          nameParagraph.textContent = groups[0]["groupName"];
 
-        const contentDiv = document.createElement("div");
-        contentDiv.className = "flex-1 min-w-0";
+          detailsDiv.appendChild(nameParagraph);
 
-        const nameParagraph = document.createElement("p");
-                  nameParagraph.className = "text-sm font-semibold text-white truncate";
-                  nameParagraph.textContent = groups[0]["groupName"];
+          contentDiv.appendChild(imgElement);
+          contentDiv.appendChild(detailsDiv);
 
-        contentDiv.appendChild(nameParagraph);
-
-                  // Append elements to the flex container
-        flexDiv.appendChild(imgDiv);
-        flexDiv.appendChild(contentDiv);
-
-                  // Append the flex container to the list item
-        liElement.appendChild(flexDiv);
-
-                  // Append the list item to the groups list container
-                  groupsListContainer.appendChild(liElement);
-              } else {
-                  console.warn("No details found for groupId:", element.groupid);
-              }
+          liElement.appendChild(contentDiv);
+          groupsListContainer.appendChild(liElement);
+        }
       } catch (error) {
-              console.error("Failed to retrieve group details:", error);
+        console.error("Failed to retrieve group details:", error);
       }
     });
   } catch (error) {
     console.error("Failed to retrieve data:", error);
   }
 };
-
-
