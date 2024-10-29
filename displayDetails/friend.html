@@ -443,18 +443,13 @@
                 });
 
                 console.log(splits);
-                const individualAmount = splits.reduce((total, split) => {
-                    if (split.id !== currentUserId) {
-                        return total + split.amount;
-                    }
-                    return total;
-                }, 0);
 
                 // Update total balance
+                const splitAmount = splits.find(split => split.id === friendId).amount;
                 if (isPayee) {
-                    totalBalance -= individualAmount;
+                    totalBalance -= splitAmount;
                 } else {
-                    totalBalance += individualAmount;
+                    totalBalance += splitAmount;
                 }
 
                 const expenseDate = new Date(expense.time).toLocaleDateString('en-US', {
