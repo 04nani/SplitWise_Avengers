@@ -256,7 +256,7 @@
             const friendsListElement = document.getElementById('friendsList');
             friendsListElement.innerHTML = '';
             friends.forEach(friend => {
-                if (!selectedFriends.has(friend.friendId)) {
+                if (!selectedFriends.has(friend.accountId)) {
                     const div = document.createElement('div');
                     div.textContent = friend.name;
                     div.addEventListener('click', () => addMember(friend));
@@ -278,7 +278,7 @@
             removeBtn.textContent = 'x';
             removeBtn.addEventListener('click', () => {
                 memberBubble.remove();
-                selectedFriends.delete(friend.friendId);
+                selectedFriends.delete(friend.accountId);
                 displayFriends(friendsList);
             });
 
@@ -286,7 +286,7 @@
             selectedMembersElement.appendChild(memberBubble);
 
             // Add friend to selected friends set
-            selectedFriends.add(friend.friendId);
+            selectedFriends.add(friend.accountId);
 
             // Clear the input and hide the dropdown
             document.getElementById('addMemberInput').value = '';
