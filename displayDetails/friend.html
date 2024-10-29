@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splitwise Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .profile-card {
+            background-color: #2d2d2d;
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            background-color: #404040;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar svg {
+            width: 24px;
+            height: 24px;
+            fill: #ffffff;
+        }
+
+        .username {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .menu-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .menu-button:hover {
+            background-color: #404040;
+        }
+
+        .menu-button svg {
+            width: 20px;
+            height: 20px;
+            fill: #ffffff;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #3d3d3d;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            z-index: 1;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: #ff4444;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #4d4d4d;
+            border-radius: 8px;
+        }
+
+        .balance-section {
+            background-color: #363636;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .balance-label {
+            color: #999999;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: #ff4444;
+        }
+
+        .balance-amount.positive {
+            color: #1cc29f;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .settle-button {
+            background-color: #1cc29f;
+        }
+
+        .settle-button:hover {
+            background-color: #19af8f;
+        }
+
+        .chat-button {
+            background-color: #4a4a4a;
+        }
+
+        .chat-button:hover {
+            background-color: #5a5a5a;
+        }
+
+        .button svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .expenses-list {
+            background-color: #363636;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .expenses-header {
+            padding: 16px;
+            background-color: #404040;
+            font-weight: 600;
+            color: #ffffff;
+            border-bottom: 1px solid #4a4a4a;
+        }
+
+        .expense-item {
+            display: flex;
+            padding: 16px;
+            border-bottom: 1px solid #4a4a4a;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .expense-item:hover {
+            background-color: #404040;
+        }
+
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+
+        .expense-details {
+            flex-grow: 1;
+        }
+
+        .expense-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .expense-date {
+            font-size: 0.85rem;
+            color: #999999;
+        }
+
+        .expense-amount {
+            font-weight: 600;
+            text-align: right;
+            min-width: 120px;
+            /* Added to maintain consistent spacing */
+        }
+
+        .amount-paid {
+            color: #1cc29f;
+        }
+
+        .amount-owed {
+            color: #ff4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="user-info">
+                <div class="avatar">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                </div>
+                <span class="username"></span>
+            </div>
+            <div class="dropdown">
+                <button class="menu-button">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                    </svg>
+                </button>
+                <div class="dropdown-content">
+                    <a href="#">Remove Friend</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="balance-section">
+            <div class="balance-label">you owe</div>
+            <div class="balance-amount"></div>
+        </div>
+
+        <div class="buttons-container">
+            <button class="button settle-button">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
+                </svg>
+                Settle Up
+            </button>
+            <button class="button chat-button">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
+                </svg>
+                Chat
+            </button>
+        </div>
+
+        <div class="expenses-list">
+            <div class="expenses-header">Recent Expenses</div>
+            <!-- Items will render dynamicly -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+    <script>
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        const MESSAGES_COLLECTION_ID = '6717d5af00350bc68759';
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const friendId = urlParams.get('friendId');
+
+        async function checkFriendship(friendId) {
+            try {
+                const user = await account.get();
+                currentUserId = user.$id;
+
+                const query = await databases.listDocuments(
+                    DATABASE_ID,
+                    FRIENDS_COLLECTION_ID,
+                    [
+                        Appwrite.Query.equal('status', 'accepted'),
+                        Appwrite.Query.or([
+                            Appwrite.Query.and([
+                                Appwrite.Query.equal('userId', currentUserId),
+                                Appwrite.Query.equal('friendId', friendId)
+                            ]),
+                            Appwrite.Query.and([
+                                Appwrite.Query.equal('userId', friendId),
+                                Appwrite.Query.equal('friendId', currentUserId)
+                            ])
+                        ])
+                    ]
+                );
+
+                isFriend = query.documents.length > 0;
+
+                if (!isFriend) {
+                    showError("You are not friends with this user");
+                    document.querySelector('.chat-input').style.display = 'none';
+                } else {
+                    const friend = await fetchFriendDetails(friendId);
+                    if (friend && friend.length > 0) {
+                        updateFriendDetails(friend);
+                        // subscribeToMessages();
+                        const expenses = await fetchExpenses(currentUserId, friendId);
+                        updateExpensesList(expenses, currentUserId);
+
+                    } else {
+                        showError("Friend not found");
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching friend:', error);
+                showError('Failed to connect to chat');
+            }
+        }
+
+        async function fetchFriendDetails(friendId) {
+            try {
+                const response = await databases.listDocuments(
+                    DATABASE_ID,
+                    USERS_COLLECTION_ID,
+                    [Appwrite.Query.equal("accountId", friendId)]
+                );
+                return response.documents;
+            } catch (error) {
+                console.error('Error fetching friend details:', error);
+                return null;
+            }
+        }
+
+        function updateFriendDetails(friend) {
+            const nameElement = document.querySelector('.username');
+
+            if (friend && friend.length > 0) {
+                nameElement.textContent = friend[0].name;
+                document.title = `${friend[0].name}`;
+            }
+        }
+
+        async function fetchExpenses(currentUserId, friendId) {
+            try {
+                const response = await databases.listDocuments(
+                    DATABASE_ID,
+                    ACTIVITIES_COLLECTION_ID,
+                    [
+                        Appwrite.Query.or([
+                            Appwrite.Query.and([
+                                Appwrite.Query.equal('paidById', currentUserId),
+                                Appwrite.Query.contains('splitMembers', friendId)
+                            ]),
+                            Appwrite.Query.and([
+                                Appwrite.Query.equal('paidById', friendId),
+                                Appwrite.Query.contains('splitMembers', currentUserId)
+                            ])
+                        ]),
+                        Appwrite.Query.orderDesc('$createdAt')
+                    ]
+                );
+                return response.documents;
+            } catch (error) {
+                console.error('Error fetching expenses:', error);
+                showError('Failed to load expenses');
+                return [];
+            }
+        }
+
+        function updateExpensesList(expenses, currentUserId) {
+            const expensesList = document.querySelector('.expenses-list');
+            let totalBalance = 0;
+
+            // Keep the header
+            expensesList.innerHTML = '<div class="expenses-header">Recent Expenses</div>';
+
+            if (!expenses.length) {
+                expensesList.innerHTML += `
+            <div class="expense-item">
+                <div class="expense-details">
+                    <div class="expense-title">No expenses yet</div>
+                </div>
+            </div>
+        `;
+                return;
+            }
+
+            expenses.forEach(expense => {
+                console.log(expense);
+                console.log(currentUserId);
+                const isPayee = expense.paidById === currentUserId;
+                const amount = parseFloat(expense.amount);
+
+                const splits = (expense.splitMembers || "").split('##').map(split => {
+                    const [id, amount] = split.split('$$');
+                    return { id: id, amount: parseFloat(amount) };
+                });
+
+                console.log(splits);
+                const individualAmount = splits.reduce((total, split) => {
+                    if (split.id !== currentUserId) {
+                        return total + split.amount;
+                    }
+                    return total;
+                }, 0);
+
+                // Update total balance
+                if (isPayee) {
+                    totalBalance -= individualAmount;
+                } else {
+                    totalBalance += individualAmount;
+                }
+
+                const expenseDate = new Date(expense.time).toLocaleDateString('en-US', {
+                    weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
+                });
+
+                const expenseItem = `
+            <div class="expense-item">
+                <div class="expense-details">
+                    <div class="expense-title">${expense.description}</div>
+                    <div class="expense-date">${expenseDate}</div>
+                </div>
+                <div class="expense-amount ${isPayee ? 'amount-paid' : 'amount-owed'}">
+                    ${isPayee ? 'You Lent' : 'You Borrowed'} $${splits.find(split => split.id === friendId).amount.toFixed(2)}
+                </div>
+            </div>
+        `;
+                expensesList.innerHTML += expenseItem;
+            });
+
+            // Update balance section
+            const balanceSection = document.querySelector('.balance-section');
+            const balanceAmount = document.querySelector('.balance-amount');
+            const balanceLabel = document.querySelector('.balance-label');
+
+            if (totalBalance > 0) {
+                balanceLabel.textContent = 'you are owed';
+                balanceAmount.textContent = `$${Math.abs(totalBalance).toFixed(2)}`;
+                balanceAmount.classList.remove('negative');
+                balanceAmount.classList.add('positive');
+            } else if (totalBalance < 0) {
+                balanceLabel.textContent = 'you owe';
+                balanceAmount.textContent = `$${Math.abs(totalBalance).toFixed(2)}`;
+                balanceAmount.classList.remove('positive');
+                balanceAmount.classList.add('negative');
+            } else {
+                balanceLabel.textContent = 'you are settled up';
+                balanceAmount.textContent = '$0.00';
+                balanceAmount.classList.remove('positive', 'negative');
+            }
+        }
+
+        // Initialize
+        if (friendId) {
+            checkFriendship(friendId);
+            document.querySelector('.chat-button').addEventListener('click', () => {
+                window.location.href = `/chat/friend.html?friendId=${friendId}`;
+            });
+        } else {
+            showError('No friend selected');
+            document.querySelector('.chat-input').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
