@@ -266,7 +266,7 @@
                     </svg>
                 </button>
                 <div class="dropdown-content">
-                    <a href="#">Remove Friend</a>
+                    <a href="#" onclick="removeFriend()">Remove Friend</a>
                 </div>
             </div>
         </div>
@@ -489,6 +489,43 @@
                 balanceLabel.textContent = 'you are settled up';
                 balanceAmount.textContent = '$0.00';
                 balanceAmount.classList.remove('positive', 'negative');
+            }
+        }
+
+        async function removeFriend() {
+            try {
+                const user = await account.get();
+                currentUserId = user.$id;
+
+                const query = await databases.listDocuments(
+                    DATABASE_ID,
+                    FRIENDS_COLLECTION_ID,
+                    [
+                        Appwrite.Query.equal('status', 'accepted'),
+                        Appwrite.Query.or([
+                            Appwrite.Query.and([
+                                Appwrite.Query.equal('userId', currentUserId),
+                                Appwrite.Query.equal('friendId', friendId)
+                            ]),
+                            Appwrite.Query.and([
+                                Appwrite.Query.equal('userId', friendId),
+                                Appwrite.Query.equal('friendId', currentUserId)
+                            ])
+                        ])
+                    ]
+                );
+
+                if (query.documents.length > 0) {
+                    const friendshipId = query.documents[0].$id;
+                    await databases.updateDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, friendshipId, { status: 'removed' });
+
+                    window.location.href = '/';
+                } else {
+                    showError("You are not friends with this user");
+                }
+            } catch (error) {
+                console.error('Error removing friend:', error);
+                showError('Failed to remove friend');
             }
         }
 
