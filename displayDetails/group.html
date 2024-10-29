@@ -298,7 +298,7 @@
                     </svg>
                 </button>
                 <div class="dropdown-content">
-                    <a href="#">Group Settings</a>
+                    <a href="#" onclick="groupSettings()">Group Settings</a>
                     <a href="#" class="danger">Leave Group</a>
                 </div>
             </div>
@@ -641,6 +641,10 @@
                 }
             }
         });
+
+        function groupSettings() {
+            window.location.href = `/displayDetails/groupSettings.html?groupId=${groupId}`;
+        }
 
         // Initialize the page when loaded
         if (groupId) {
