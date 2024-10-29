@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SplitWise-Avengers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             font-family: 'Open Sans', Arial, sans-serif;
@@ -18,11 +18,13 @@
             height: 100vh;
             overflow: hidden;
         }
+
         .content {
             flex: 1;
             overflow-y: auto;
             padding: 1rem;
         }
+
         .navbar {
             display: flex;
             justify-content: space-around;
@@ -30,6 +32,7 @@
             padding: 0.5rem 0;
             box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
         }
+
         .navbar a {
             color: #AAAAAA;
             text-decoration: none;
@@ -37,17 +40,21 @@
             font-size: 0.9rem;
             flex: 1;
         }
+
         .navbar a.active {
             color: #57BB8A;
         }
+
         .navbar a:hover {
             color: #57BB8A;
         }
+
         .navbar i {
             display: block;
             font-size: 1.5rem;
             margin-bottom: 0.2rem;
         }
+
         /* Floating Add Expense Button */
         .add-expense-button {
             position: fixed;
@@ -66,20 +73,25 @@
             transition: background-color 0.3s ease, transform 0.1s ease;
             z-index: 1000;
         }
+
         .add-expense-button:hover {
             background-color: #399D6C;
         }
+
         .add-expense-button:active {
             transform: scale(0.98);
         }
+
         /* Content Placeholder */
         .activity-log {
             padding: 1rem;
         }
+
         .activity-log h2 {
             color: #57BB8A;
             margin-bottom: 1rem;
         }
+
         .activity-item {
             background-color: #1E1E1E;
             padding: 1rem;
@@ -87,9 +99,11 @@
             border-radius: 8px;
             animation: fadeIn 0.5s ease-in-out;
         }
+
         .activity-item p {
             margin: 0;
         }
+
         .action-button {
             position: absolute;
             top: 10px;
@@ -106,9 +120,17 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .container {
             background-color: white;
             padding: 2rem;
@@ -116,36 +138,145 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
+
         h1 {
             color: #333;
         }
+
         .message {
             margin-top: 1rem;
         }
+
         .error-message {
             color: red;
         }
+
         .success-message {
             color: green;
         }
 
-        .title{
+        .title {
             color: #F9FAFB;
             font-size: 30px;
             /* align-items: center; */
         }
+
+        .list-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            color: #57BB8A;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+            font-weight: 600;
+        }
+
+        ul[role="list"] {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .list-item {
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .item-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-name {
+            color: #FFFFFF;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-subtitle {
+            color: #AAAAAA;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge.accepted {
+            background-color: rgba(87, 187, 138, 0.2);
+            color: #57BB8A;
+        }
+
+        .status-badge.pending {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.accepted {
+            background-color: #57BB8A;
+        }
+
+        .status-dot.pending {
+            background-color: #EF4444;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: #2E2E2E;
+            margin: 1rem 0;
+        }
     </style>
 </head>
+
 <body>
-    
+
     <button class="action-button" onclick="handleAction()">
         <i id="action-icon" class="fas fa-user-plus"></i>
     </button>
-    
+
 
     <!-- Content Area -->
     <div class="content">
-        <div  class="Main-Container">
+        <div class="Main-Container">
             <h1 class="title">Friends List</h1>
             <ul role="list" class="max-w-sm divide-y divide-gray-200 dark:divide-gray-700">
             </ul>
@@ -179,9 +310,9 @@
         </a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
     <script>
-        var userid="";
+        var userid = "";
         const { Client, Account } = Appwrite;
 
         const client = new Client()
@@ -194,7 +325,7 @@
         async function checkSession() {
             try {
                 const user = await account.get();
-                userid=user.$id;
+                userid = user.$id;
                 console.log('User is logged in:', user);
             } catch (error) {
                 console.log('User is not logged in or session expired:', error);
@@ -206,39 +337,38 @@
         checkSession();
 
         function navigate(page) {
-            if(page=="friends"){
+            if (page == "friends") {
 
-          document.getElementsByClassName("title")[0].innerText="Friends List";
-          const ulElement = document.querySelector('ul[role="list"].max-w-sm');
-        // Remove all child elements from the <ul>
-            while (ulElement.firstChild) {
-            ulElement.removeChild(ulElement.firstChild);
-                }
-            getFriendsData();
-            }
-            else if (page=="groups"){
-            document.getElementsByClassName("title")[0].innerText="Groups List";
+                document.getElementsByClassName("title")[0].innerText = "Friends List";
                 const ulElement = document.querySelector('ul[role="list"].max-w-sm');
-            // Remove all child elements from the <ul>
-            while (ulElement.firstChild) {
-            ulElement.removeChild(ulElement.firstChild);
+                while (ulElement.firstChild) {
+                    ulElement.removeChild(ulElement.firstChild);
                 }
-            getGroups();
+                getFriendsData();
+            }
+            else if (page == "groups") {
+                document.getElementsByClassName("title")[0].innerText = "Groups List";
+                const ulElement = document.querySelector('ul[role="list"].max-w-sm');
+                while (ulElement.firstChild) {
+                    ulElement.removeChild(ulElement.firstChild);
                 }
-            else{
+                getGroups();
+            }
+            else {
             }
         }
-            function addExpense() {
-                window.location.href = '/addExpense/home.html';
-            }
-            function redirectToProfile(){
-                window.location.href = 'profile.html';
-            }
-            function redirectToFriends(){
-                window.location.href = 'Friendrequest.html';
+        function addExpense() {
+            window.location.href = '/addExpense/home.html';
         }
-            </script>
-<script src="pages.js"></script>
-<script src="actionhandling.js"></script>
+        function redirectToProfile() {
+            window.location.href = 'profile.html';
+        }
+        function redirectToFriends() {
+            window.location.href = 'Friendrequest.html';
+        }
+    </script>
+    <script src="pages.js"></script>
+    <script src="actionhandling.js"></script>
 </body>
+
 </html>

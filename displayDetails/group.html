@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splitwise Group</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .group-card {
+            background-color: #2d2d2d;
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .group-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .group-avatar {
+            width: 48px;
+            height: 48px;
+            background-color: #404040;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1cc29f;
+        }
+
+        .group-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .menu-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .menu-button:hover {
+            background-color: #404040;
+        }
+
+        .menu-button svg {
+            width: 20px;
+            height: 20px;
+            fill: #ffffff;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #3d3d3d;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            z-index: 1;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: #ffffff;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-content a.danger {
+            color: #ff4444;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #4d4d4d;
+            border-radius: 8px;
+        }
+
+        .group-balances {
+            background-color: #363636;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .balance-header {
+            color: #999999;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .member-balance {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #4a4a4a;
+        }
+
+        .member-balance:last-child {
+            border-bottom: none;
+        }
+
+        .member-name {
+            font-weight: 500;
+        }
+
+        .balance-amount {
+            font-weight: 600;
+        }
+
+        .amount-positive {
+            color: #1cc29f;
+        }
+
+        .amount-negative {
+            color: #ff4444;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .settle-button {
+            background-color: #1cc29f;
+        }
+
+        .settle-button:hover {
+            background-color: #19af8f;
+        }
+
+        .chat-button {
+            background-color: #4a4a4a;
+        }
+
+        .chat-button:hover {
+            background-color: #5a5a5a;
+        }
+
+        .button svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .expenses-list {
+            background-color: #363636;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .expenses-header {
+            padding: 16px;
+            background-color: #404040;
+            font-weight: 600;
+            color: #ffffff;
+            border-bottom: 1px solid #4a4a4a;
+        }
+
+        .expense-item {
+            display: flex;
+            padding: 16px;
+            border-bottom: 1px solid #4a4a4a;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .expense-item:hover {
+            background-color: #404040;
+        }
+
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+
+        .expense-details {
+            flex-grow: 1;
+        }
+
+        .expense-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .expense-payer {
+            font-size: 0.85rem;
+            color: #999999;
+            margin-bottom: 2px;
+        }
+
+        .expense-date {
+            font-size: 0.85rem;
+            color: #999999;
+        }
+
+        .expense-amount {
+            font-weight: 600;
+            text-align: right;
+            min-width: 100px;
+            color: #ffffff;
+        }
+
+        .amount-paid {
+            color: #1cc29f !important;
+            font-weight: 600;
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .amount-owed {
+            color: #ff4444 !important;
+            font-weight: 600;
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .expense-payer {
+            font-size: 0.85rem;
+            color: #999999;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="group-card">
+        <div class="group-header">
+            <div class="group-info">
+                <div class="group-avatar">🏠</div>
+                <span class="group-name"></span>
+            </div>
+            <div class="dropdown">
+                <button class="menu-button">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                    </svg>
+                </button>
+                <div class="dropdown-content">
+                    <a href="#">Group Settings</a>
+                    <a href="#" class="danger">Leave Group</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="group-balances">
+            <div class="balance-header">Group Balances</div>
+            <!-- Balances will render dynamically -->
+        </div>
+
+        <div class="buttons-container">
+            <button class="button settle-button">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
+                </svg>
+                Settle Up
+            </button>
+            <button class="button chat-button">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
+                </svg>
+                Group Chat
+            </button>
+        </div>
+
+        <div class="expenses-list">
+            <div class="expenses-header">Recent Expenses</div>
+            <!-- Expenses will render dynamically -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+    <script>
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        const MESSAGES_COLLECTION_ID = '6717d5af00350bc68759';
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+        const GROUPS_COLLECTION_ID = "66ffed4e001b7299c97c";
+        const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('groupId');
+        let currentUserId;
+
+        async function initializeGroup() {
+            try {
+                const user = await account.get();
+                currentUserId = user.$id;
+
+                // Check if user is member of the group
+                const membershipQuery = await databases.listDocuments(
+                    DATABASE_ID,
+                    GROUP_MEMBERS_COLLECTION_ID,
+                    [
+                        Appwrite.Query.equal('groupid', groupId),
+                        Appwrite.Query.equal('memberId', currentUserId)
+                    ]
+                );
+
+                if (membershipQuery.documents.length === 0) {
+                    showError("You are not a member of this group");
+                    return;
+                }
+
+                // Fetch group details
+                const groupDetails = await fetchGroupDetails(groupId);
+                if (groupDetails) {
+                    updateGroupDetails(groupDetails);
+                    await loadGroupMembers();
+                    const expenses = await fetchGroupExpenses(groupId);
+                    updateExpensesList(expenses);
+                }
+            } catch (error) {
+                console.error('Error initializing group:', error);
+                showError('Failed to load group');
+            }
+        }
+
+        async function fetchGroupDetails(groupId) {
+            try {
+                const response = await databases.getDocument(
+                    DATABASE_ID,
+                    GROUPS_COLLECTION_ID,
+                    groupId
+                );
+                return response;
+            } catch (error) {
+                console.error('Error fetching group details:', error);
+                return null;
+            }
+        }
+
+        function updateGroupDetails(group) {
+            document.querySelector('.group-name').textContent = group.groupName;
+            document.title = `${group.groupName} - Splitwise`;
+        }
+
+        async function loadGroupMembers() {
+            try {
+                const members = await databases.listDocuments(
+                    DATABASE_ID,
+                    GROUP_MEMBERS_COLLECTION_ID,
+                    [Appwrite.Query.equal('groupid', groupId)]
+                );
+
+                console.log(members)
+
+                const userPromises = members.documents.map(member =>
+                    databases.listDocuments(
+                        DATABASE_ID,
+                        USERS_COLLECTION_ID,
+                        [Appwrite.Query.equal('accountId', member.memberId)]
+                    )
+                );
+
+                const userResults = await Promise.all(userPromises);
+                const users = userResults.map(result => result.documents[0]);
+
+                updateBalances(users);
+            } catch (error) {
+                console.error('Error loading group members:', error);
+            }
+        }
+
+        async function fetchGroupExpenses(groupId) {
+            try {
+                const response = await databases.listDocuments(
+                    DATABASE_ID,
+                    ACTIVITIES_COLLECTION_ID,
+                    [
+                        Appwrite.Query.equal('groupId', groupId),
+                        Appwrite.Query.orderDesc('$createdAt')
+                    ]
+                );
+                return response.documents;
+            } catch (error) {
+                console.error('Error fetching group expenses:', error);
+                return [];
+            }
+        }
+
+        async function updateBalances(users) {
+            try {
+                const balancesContainer = document.querySelector('.group-balances');
+                balancesContainer.innerHTML = '<div class="balance-header">Group Balances</div>';
+
+                // Fetch all expenses for this group
+                const expenses = await databases.listDocuments(
+                    DATABASE_ID,
+                    ACTIVITIES_COLLECTION_ID,
+                    [Appwrite.Query.equal('groupId', groupId)]
+                );
+
+                // Initialize balance map for all users
+                const balances = {};
+                users.forEach(user => {
+                    balances[user.accountId] = 0;
+                });
+
+                // Calculate balances from all expenses
+                expenses.documents.forEach(expense => {
+                    const paidBy = expense.paidById;
+                    const totalAmount = parseFloat(expense.amount);
+
+                    // Parse splits
+                    const splits = expense.splitMembers.split('##').map(split => {
+                        const [id, amount] = split.split('$$');
+                        return { id, amount: parseFloat(amount) };
+                    });
+
+                    // If you're the payer, add what others owe you
+                    if (paidBy === currentUserId) {
+                        splits.forEach(split => {
+                            if (split.id !== currentUserId) {
+                                balances[split.id] -= split.amount;
+                            }
+                        });
+                    }
+                    // If someone else paid, subtract what you owe them
+                    else {
+                        const myShare = splits.find(split => split.id === currentUserId)?.amount || 0;
+                        balances[paidBy] += myShare;
+                    }
+                });
+
+                // Display balances for each user
+                users.forEach(user => {
+                    if (user.accountId === currentUserId) return; // Skip current user
+
+                    const balance = balances[user.accountId] || 0;
+                    const balanceElement = `
+                <div class="member-balance">
+                    <div class="member-name">${user.name}</div>
+                    <div class="balance-amount ${balance >= 0 ? 'amount-negative' : 'amount-positive'}">
+                        ${balance < 0 ? 'Owes you' : 'You owe'} $${Math.abs(balance).toFixed(2)}
+                    </div>
+                </div>
+            `;
+                    balancesContainer.innerHTML += balanceElement;
+                });
+
+            } catch (error) {
+                console.error('Error updating balances:', error);
+                showError('Failed to calculate balances');
+            }
+        }
+
+        function updateExpensesList(expenses) {
+            const expensesList = document.querySelector('.expenses-list');
+            expensesList.innerHTML = '<div class="expenses-header">Recent Expenses</div>';
+
+            if (!expenses.length) {
+                expensesList.innerHTML += `
+            <div class="expense-item">
+                <div class="expense-details">
+                    <div class="expense-title">No expenses yet</div>
+                </div>
+            </div>
+        `;
+                return;
+            }
+
+            expenses.forEach(async expense => {
+                try {
+                    // Fetch payer's details
+                    const payerResponse = await databases.listDocuments(
+                        DATABASE_ID,
+                        USERS_COLLECTION_ID,
+                        [Appwrite.Query.equal('accountId', expense.paidById)]
+                    );
+                    const payer = payerResponse.documents[0];
+
+                    const expenseDate = new Date(expense.time).toLocaleDateString('en-US', {
+                        weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
+                    });
+
+                    // Parse split members
+                    const splits = expense.splitMembers.split('##').map(split => {
+                        const [id, amount] = split.split('$$');
+                        return { id, amount: parseFloat(amount) };
+                    });
+
+                    // Calculate current user's share
+                    const userSplit = splits.find(split => split.id === currentUserId);
+                    const userAmount = userSplit ? userSplit.amount : 0;
+                    const isPayer = expense.paidById === currentUserId;
+
+                    const expenseItem = `
+                <div class="expense-item">
+                    <div class="expense-details">
+                        <div class="expense-title">${expense.description}</div>
+                        <div class="expense-payer">${payer.name} paid ${parseFloat(expense.amount).toFixed(2)}</div>
+                        <div class="expense-date">${expenseDate}</div>
+                    </div>
+                    <div class="expense-amount ${isPayer ? 'amount-paid' : 'amount-owed'}">
+                        ${isPayer ? 'You Lent ' + (parseFloat(expense.amount).toFixed(2) - parseFloat(userAmount).toFixed(2)) : 'You Borrowed ' + parseFloat(userAmount).toFixed(2)}
+                    </div>
+                </div>
+            `;
+                    expensesList.innerHTML += expenseItem;
+                } catch (error) {
+                    console.error('Error rendering expense:', error);
+                }
+            });
+        }
+
+        function showError(message) {
+            // Create and show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #ff4444;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                z-index: 1000;
+            `;
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+
+            // Remove error message after 3 seconds
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 3000);
+        }
+
+        // Handle button clicks
+        document.querySelector('.chat-button').addEventListener('click', () => {
+            window.location.href = `/chat/group.html?groupId=${groupId}`;
+        });
+
+
+        // Handle group leave
+        document.querySelector('.dropdown-content .danger').addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to leave this group?')) {
+                try {
+                    // Check if user has outstanding balances
+                    // This is a placeholder - you'll need to implement the actual balance check
+                    const hasBalances = false; // Implement this check
+
+                    if (hasBalances) {
+                        alert('Please settle all balances before leaving the group.');
+                        return;
+                    }
+
+                    // Remove user from group members
+                    const membershipQuery = await databases.listDocuments(
+                        DATABASE_ID,
+                        GROUP_MEMBERS_COLLECTION_ID,
+                        [
+                            Appwrite.Query.equal('groupId', groupId),
+                            Appwrite.Query.equal('userId', currentUserId)
+                        ]
+                    );
+
+                    if (membershipQuery.documents.length > 0) {
+                        await databases.deleteDocument(
+                            DATABASE_ID,
+                            GROUP_MEMBERS_COLLECTION_ID,
+                            membershipQuery.documents[0].$id
+                        );
+                        window.location.href = '/';
+                    }
+                } catch (error) {
+                    console.error('Error leaving group:', error);
+                    showError('Failed to leave group');
+                }
+            }
+        });
+
+        // Initialize the page when loaded
+        if (groupId) {
+            initializeGroup();
+        } else {
+            showError('No group selected');
+            document.querySelector('.buttons-container').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
