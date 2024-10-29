@@ -22,96 +22,81 @@ const getFriendsData = async () => {
     const friendsListContainer = document.querySelector('ul[role="list"]');
     friendsListContainer.innerHTML = '';
 
-    const user_1 = await account.get();
-    console.log(`"user id : ${user_1.$id}"`);
+    const user = await account.get();
+    console.log(`"user id : ${user.$id}"`);
 
+    // Fetch all friend relationships
     const response = await databases.listDocuments(
       "66f9e43e00253528c7a8",
       "66fc597e0027848acf57",
       [
         Appwrite.Query.equal('status', 'accepted'),
         Appwrite.Query.or([
-          Appwrite.Query.equal('userId', user_1.$id),
-          Appwrite.Query.equal('friendId', user_1.$id)
+          Appwrite.Query.equal('userId', user.$id),
+          Appwrite.Query.equal('friendId', user.$id)
         ])
       ]
     );
 
     console.log(response.documents);
-    const resp = response.documents;
-    user_friendslist = [];
+    const friendRelations = response.documents;
+    const user_friendslist = new Set(); // Using Set to avoid duplicates
 
-    resp.forEach(async (element) => {
-      if (user_1.$id != element.friendId && user_friendslist.indexOf(element.friendId) == -1) {
-        user_friendslist.push(element.friendId);
+    // Process each friend relationship
+    for (const relation of friendRelations) {
+      // Determine which ID is the friend's ID
+      const friendId = relation.userId === user.$id ? relation.friendId : relation.userId;
+
+      if (!user_friendslist.has(friendId)) {
+        user_friendslist.add(friendId);
 
         try {
+          // Fetch friend's details
           const friendsResponse = await databases.listDocuments(
             "66f9e43e00253528c7a8",
             "66f9e45d002562334094",
-            [Appwrite.Query.equal("accountId", element.friendId)]
+            [Appwrite.Query.equal("accountId", friendId)]
           );
 
           const friends = friendsResponse.documents;
           console.log(friends);
 
           if (friends.length > 0) {
+            const friend = friends[0];
+
+            // Create friend list item
             const liElement = document.createElement("li");
             liElement.className = "list-item";
-            liElement.setAttribute("data-friend-id", element.friendId);
+            liElement.setAttribute("data-friend-id", friendId);
 
             liElement.onclick = () => {
-              window.location.href = `/displayDetails/friend.html?friendId=${element.friendId}`;
+              window.location.href = `/displayDetails/friend.html?friendId=${friendId}`;
             };
 
-            const contentDiv = document.createElement("div");
-            contentDiv.className = "item-content";
+            // Create content structure
+            liElement.innerHTML = `
+                          <div class="item-content">
+                              <img class="avatar" 
+                                   src="https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg" 
+                                   alt="${friend.name}">
+                              <div class="item-details">
+                                  <p class="item-name">${friend.name}</p>
+                                  <p class="item-subtitle">${friend.email}</p>
+                              </div>
+                              <span class="status-badge ${relation.status}">
+                                  <span class="status-dot ${relation.status}"></span>
+                                  ${relation.status}
+                              </span>
+                          </div>
+                      `;
 
-            const imgElement = document.createElement("img");
-            imgElement.className = "avatar";
-            imgElement.src = "https://img.freepik.com/premium-vector/man-male-young-person-icon_24877-30218.jpg";
-            imgElement.alt = friends[0].name;
-
-            const detailsDiv = document.createElement("div");
-            detailsDiv.className = "item-details";
-
-            const nameParagraph = document.createElement("p");
-            nameParagraph.className = "item-name";
-            nameParagraph.textContent = friends[0].name;
-
-            const emailParagraph = document.createElement("p");
-            emailParagraph.className = "item-subtitle";
-            emailParagraph.textContent = friends[0].email;
-
-            detailsDiv.appendChild(nameParagraph);
-            detailsDiv.appendChild(emailParagraph);
-
-            const statusBadge = document.createElement("span");
-            const statusDot = document.createElement("span");
-
-            if (element.status == "accepted") {
-              statusBadge.className = "status-badge accepted";
-              statusDot.className = "status-dot accepted";
-            } else {
-              statusBadge.className = "status-badge pending";
-              statusDot.className = "status-dot pending";
-            }
-
-            statusBadge.appendChild(statusDot);
-            statusBadge.appendChild(document.createTextNode(element.status));
-
-            contentDiv.appendChild(imgElement);
-            contentDiv.appendChild(detailsDiv);
-            contentDiv.appendChild(statusBadge);
-
-            liElement.appendChild(contentDiv);
             friendsListContainer.appendChild(liElement);
           }
         } catch (error) {
           console.error("Failed to retrieve friend details:", error);
         }
       }
-    });
+    }
   } catch (error) {
     console.error("Failed to retrieve data:", error);
   }
