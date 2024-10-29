@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .settings-card {
+            background-color: #2d2d2d;
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: #1cc29f;
+            cursor: pointer;
+            padding: 8px;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .back-button:hover {
+            text-decoration: underline;
+        }
+
+        .section-title {
+            color: #999999;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .members-list {
+            background-color: #363636;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #4a4a4a;
+        }
+
+        .member-item:last-child {
+            border-bottom: none;
+        }
+
+        .member-name {
+            font-weight: 500;
+        }
+
+        .remove-button {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .remove-button:hover {
+            background-color: #ff2020;
+        }
+
+        .add-member-section {
+            background-color: #363636;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            background-color: #2d2d2d;
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            color: white;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #1cc29f;
+        }
+
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 4px;
+            background-color: #2d2d2d;
+        }
+
+        .friend-item {
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: #ffffff;
+        }
+
+        .friend-item:hover {
+            background-color: #4a4a4a;
+        }
+
+        .friend-item.loading {
+            cursor: default;
+            color: #999999;
+        }
+
+        /* Scrollbar styling */
+        .search-results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-results::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb:hover {
+            background: #5a5a5a;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="settings-card">
+        <div class="settings-header">
+            <h1 class="header-title">Group Settings</h1>
+            <button class="back-button" onclick="goBack()">Back to Group</button>
+        </div>
+
+        <div class="members-section">
+            <h2 class="section-title">Current Members</h2>
+            <div class="members-list" id="membersList">
+                <!-- Members will be listed here -->
+            </div>
+        </div>
+
+        <div class="add-member-section">
+            <h2 class="section-title">Add New Members</h2>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search friends to add...">
+            <div class="search-results" id="searchResults">
+                <!-- Search results will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+    <script>
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        const MESSAGES_COLLECTION_ID = '6717d5af00350bc68759';
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+        const GROUPS_COLLECTION_ID = "66ffed4e001b7299c97c";
+        const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
+        const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('groupId');
+        let currentUserId;
+        let groupMembers = new Set();
+
+        // Debounce utility function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        async function initialize() {
+            try {
+                const user = await account.get();
+                currentUserId = user.$id;
+                await loadMembers();
+                setupSearchListener();
+            } catch (error) {
+                console.error('Error initializing:', error);
+                showError('Failed to load settings');
+            }
+        }
+
+        async function loadMembers() {
+            try {
+                const members = await databases.listDocuments(
+                    DATABASE_ID,
+                    GROUP_MEMBERS_COLLECTION_ID,
+                    [Appwrite.Query.equal('groupid', groupId)]
+                );
+
+                const membersList = document.getElementById('membersList');
+                membersList.innerHTML = '';
+                groupMembers.clear();
+
+                for (const member of members.documents) {
+                    const userResponse = await databases.listDocuments(
+                        DATABASE_ID,
+                        USERS_COLLECTION_ID,
+                        [Appwrite.Query.equal('accountId', member.memberId)]
+                    );
+
+                    if (userResponse.documents.length > 0) {
+                        const user = userResponse.documents[0];
+                        groupMembers.add(user.accountId);
+
+                        const memberItem = document.createElement('div');
+                        memberItem.className = 'member-item';
+                        memberItem.innerHTML = `
+                            <span class="member-name">${user.name}</span>
+                            ${member.memberId !== currentUserId ?
+                                `<button class="remove-button" onclick="removeMember('${member.$id}')">Remove</button>`
+                                : ''}
+                        `;
+                        membersList.appendChild(memberItem);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading members:', error);
+                showError('Failed to load members');
+            }
+        }
+
+        async function removeMember(memberId) {
+            if (confirm('Are you sure you want to remove this member?')) {
+                try {
+                    await databases.deleteDocument(
+                        DATABASE_ID,
+                        GROUP_MEMBERS_COLLECTION_ID,
+                        memberId
+                    );
+                    await loadMembers();
+                    showError('Member removed successfully');
+                } catch (error) {
+                    console.error('Error removing member:', error);
+                    showError('Failed to remove member');
+                }
+            }
+        }
+
+        async function searchFriends(query) {
+            const resultsContainer = document.getElementById('searchResults');
+
+            try {
+                // Show loading state
+                resultsContainer.innerHTML = '<div class="friend-item loading">Searching...</div>';
+
+                // Get user's friends
+                const friendsResponse = await databases.listDocuments(
+                    DATABASE_ID,
+                    FRIENDS_COLLECTION_ID,
+                    [
+                        Appwrite.Query.equal('status', 'accepted'),
+                        Appwrite.Query.or([
+                            Appwrite.Query.equal('userId', currentUserId),
+                            Appwrite.Query.equal('friendId', currentUserId)
+                        ])
+                    ]
+                );
+
+                const friendPromises = friendsResponse.documents.map(friend =>
+                    databases.listDocuments(
+                        DATABASE_ID,
+                        USERS_COLLECTION_ID,
+                        [Appwrite.Query.equal('accountId', friend.friendId)]
+                    )
+                );
+
+                const results = await Promise.all(friendPromises);
+                const friends = results
+                    .map(result => result.documents[0])
+                    .filter(friend =>
+                        friend &&
+                        !groupMembers.has(friend.accountId) &&
+                        friend.name.toLowerCase().includes(query.toLowerCase())
+                    );
+
+                if (friends.length === 0) {
+                    resultsContainer.innerHTML = '<div class="friend-item">No friends found</div>';
+                    return;
+                }
+
+                displaySearchResults(friends);
+            } catch (error) {
+                console.error('Error searching friends:', error);
+                resultsContainer.innerHTML = '<div class="friend-item">Error searching friends</div>';
+            }
+        }
+
+        function displaySearchResults(friends) {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+
+            friends.forEach(friend => {
+                const friendItem = document.createElement('div');
+                friendItem.className = 'friend-item';
+                friendItem.textContent = friend.name;
+                friendItem.onclick = () => addMember(friend);
+                resultsContainer.appendChild(friendItem);
+            });
+        }
+
+        function setupSearchListener() {
+            const searchInput = document.getElementById('searchInput');
+
+            // Create debounced search function
+            const debouncedSearch = debounce(async (query) => {
+                if (query.trim()) {
+                    await searchFriends(query);
+                } else {
+                    document.getElementById('searchResults').innerHTML = '';
+                }
+            }, 300); // 300ms delay
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value;
+                debouncedSearch(query);
+            });
+
+            // Clear search results when input loses focus
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    document.getElementById('searchResults').innerHTML = '';
+                }, 200);
+            });
+        }
+
+        async function addMember(friend) {
+            try {
+                await databases.createDocument(
+                    DATABASE_ID,
+                    GROUP_MEMBERS_COLLECTION_ID,
+                    Appwrite.ID.unique(),
+                    {
+                        groupid: groupId,
+                        memberId: friend.accountId,
+                        joined_at: new Date().toISOString()
+                    }
+                );
+
+                document.getElementById('searchInput').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+                await loadMembers();
+                showError('Member added successfully');
+            } catch (error) {
+                console.error('Error adding member:', error);
+                showError('Failed to add member');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #ff4444;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                z-index: 1000;
+            `;
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 3000);
+        }
+
+        function goBack() {
+            window.location.href = `/displayDetails/group.html?groupId=${groupId}`;
+        }
+
+        initialize();
+    </script>
+</body>
+
+</html>
