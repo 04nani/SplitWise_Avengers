@@ -146,6 +146,11 @@ const getGroups = async () => {
         if (groups.length > 0) {
           const liElement = document.createElement("li");
           liElement.className = "list-item";
+          liElement.setAttribute("data-group-id", element.groupid);
+
+          liElement.onclick = () => {
+            window.location.href = `/displayDetails/group.html?groupId=${element.groupid}`;
+          };
 
           const contentDiv = document.createElement("div");
           contentDiv.className = "item-content";
