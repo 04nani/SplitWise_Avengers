@@ -32,10 +32,19 @@ function navigate(page) {
     listContainer.innerHTML = ''; 
     if (page === "friends") {
         document.querySelector(".title").innerText = "Friends List";
+        document.getElementById("friends").classList.add("active");
+        document.getElementById("groups").classList.remove("active");
         updateFriendsList(); // Custom function to update friends list
     } else if (page === "groups") {
         document.querySelector(".title").innerText = "Groups List";
+        document.getElementById("groups").classList.add("active");
+        document.getElementById("friends").classList.remove("active");
         updateGroupsList(); // Custom function to update groups list
     }
     updateActionButton(page);
 }
+
+// Initialize the page with friends list on load
+document.addEventListener("DOMContentLoaded", function() {
+    navigate("friends");
+});

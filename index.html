@@ -288,11 +288,11 @@
     </div>
     <!-- Navigation Bar -->
     <div class="navbar">
-        <a href="#" class="active" onclick="navigate('friends')">
+        <a href="#" id="friends" onclick="navigate('friends')">
             <i class="fas fa-user-friends"></i>
             Friends
         </a>
-        <a href="#" onclick="navigate('groups')">
+        <a href="#" id="groups" onclick="navigate('groups')">
             <i class="fas fa-users"></i>
             Groups
         </a>
@@ -336,27 +336,6 @@
         // Call the function to check session when the page loads
         checkSession();
 
-        function navigate(page) {
-            if (page == "friends") {
-
-                document.getElementsByClassName("title")[0].innerText = "Friends List";
-                const ulElement = document.querySelector('ul[role="list"].max-w-sm');
-                while (ulElement.firstChild) {
-                    ulElement.removeChild(ulElement.firstChild);
-                }
-                getFriendsData();
-            }
-            else if (page == "groups") {
-                document.getElementsByClassName("title")[0].innerText = "Groups List";
-                const ulElement = document.querySelector('ul[role="list"].max-w-sm');
-                while (ulElement.firstChild) {
-                    ulElement.removeChild(ulElement.firstChild);
-                }
-                getGroups();
-            }
-            else {
-            }
-        }
         function addExpense() {
             window.location.href = '/addExpense/home.html';
         }
