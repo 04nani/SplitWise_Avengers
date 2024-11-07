@@ -422,12 +422,12 @@
 
             if (!expenses.length) {
                 expensesList.innerHTML += `
-            <div class="expense-item">
-                <div class="expense-details">
-                    <div class="expense-title">No expenses yet</div>
-                </div>
-            </div>
-        `;
+                    <div class="expense-item">
+                        <div class="expense-details">
+                            <div class="expense-title">No expenses yet</div>
+                        </div>
+                    </div>
+                `;
                 return;
             }
 
@@ -475,12 +475,12 @@
             const balanceAmount = document.querySelector('.balance-amount');
             const balanceLabel = document.querySelector('.balance-label');
 
-            if (totalBalance > 0) {
-                balanceLabel.textContent = 'you are owed';
+            if (totalBalance < 0) {
+                balanceLabel.textContent = 'owes you';
                 balanceAmount.textContent = `$${Math.abs(totalBalance).toFixed(2)}`;
                 balanceAmount.classList.remove('negative');
                 balanceAmount.classList.add('positive');
-            } else if (totalBalance < 0) {
+            } else if (totalBalance > 0) {
                 balanceLabel.textContent = 'you owe';
                 balanceAmount.textContent = `$${Math.abs(totalBalance).toFixed(2)}`;
                 balanceAmount.classList.remove('positive');
