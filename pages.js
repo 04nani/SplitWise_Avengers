@@ -1,5 +1,8 @@
 var user_friendslist = [];
 
+const DATABASE_ID = "66f9e43e00253528c7a8";
+const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+
 console.log(client);
 
 const databases = new Appwrite.Databases(client);
@@ -73,6 +76,9 @@ const getFriendsData = async () => {
               window.location.href = `/displayDetails/friend.html?friendId=${friendId}`;
             };
 
+            const expenses = await fetchExpenses(user.$id, friendId);
+            const balance = await calculateBalance(expenses, user.$id, friendId);
+
             // Create content structure
             liElement.innerHTML = `
                           <div class="item-content">
@@ -83,10 +89,10 @@ const getFriendsData = async () => {
                                   <p class="item-name">${friend.name}</p>
                                   <p class="item-subtitle">${friend.email}</p>
                               </div>
-                              <span class="status-badge ${relation.status}">
-                                  <span class="status-dot ${relation.status}"></span>
-                                  ${relation.status}
-                              </span>
+                              <div class="balance-container">
+                                  <span class="balance ${balance <= 0 ? 'positive' : 'negative'}">${balance < 0 ? "you owe" : "owes you"}</span>
+                                  <span class="balance ${balance <= 0 ? 'positive' : 'negative'}">${balance < 0 ? Math.abs(balance).toFixed(2) : balance.toFixed(2)}</span>
+                              </div>
                           </div>
                       `;
 
@@ -168,3 +174,54 @@ const getGroups = async () => {
     console.error("Failed to retrieve data:", error);
   }
 };
+
+async function fetchExpenses(currentUserId, friendId) {
+  try {
+      const response = await databases.listDocuments(
+          DATABASE_ID,
+          ACTIVITIES_COLLECTION_ID,
+          [
+              Appwrite.Query.or([
+                  Appwrite.Query.and([
+                      Appwrite.Query.equal('paidById', currentUserId),
+                      Appwrite.Query.contains('splitMembers', friendId)
+                  ]),
+                  Appwrite.Query.and([
+                      Appwrite.Query.equal('paidById', friendId),
+                      Appwrite.Query.contains('splitMembers', currentUserId)
+                  ])
+              ]),
+              Appwrite.Query.orderDesc('$createdAt')
+          ]
+      );
+      return response.documents;
+  } catch (error) {
+      console.error('Error fetching expenses:', error);
+      showError('Failed to load expenses');
+      return [];
+  }
+}
+
+async function calculateBalance(expenses, currentUserId, friendId) {
+  let totalBalance = 0;
+  expenses.forEach(expense => {
+    const isPayee = expense.paidById === currentUserId;
+
+    const splits = (expense.splitMembers || "").split('##').map(split => {
+        const [id, amount] = split.split('$$');
+        return { id: id, amount: parseFloat(amount) };
+    });
+
+    console.log(splits);
+
+    // Update total balance
+    const split = splits.find(split => split.id === friendId);
+    const splitAmount = split ? split.amount : 0;
+    if (isPayee) {
+        totalBalance -= splitAmount;
+    } else {
+        totalBalance += splitAmount;
+    }
+  });
+  return totalBalance;
+}

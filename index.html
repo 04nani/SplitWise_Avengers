@@ -224,39 +224,22 @@
             text-overflow: ellipsis;
         }
 
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
+        .balance-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
         }
 
-        .status-badge.accepted {
-            background-color: rgba(87, 187, 138, 0.2);
-            color: #57BB8A;
+        .balance {
+            font-weight: 600;
         }
 
-        .status-badge.pending {
-            background-color: rgba(239, 68, 68, 0.2);
-            color: #EF4444;
+        .balance.negative {
+            color: #ef4444;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .status-dot.accepted {
-            background-color: #57BB8A;
-        }
-
-        .status-dot.pending {
-            background-color: #EF4444;
+        .balance.positive {
+            color: #10b981;
         }
 
         .divider {
