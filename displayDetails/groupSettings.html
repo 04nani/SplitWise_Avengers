@@ -169,6 +169,10 @@
         .search-results::-webkit-scrollbar-thumb:hover {
             background: #5a5a5a;
         }
+        #searchResults.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
     </style>
 </head>
 
@@ -339,10 +343,9 @@
 
                 if (friends.length === 0) {
                     resultsContainer.innerHTML = '<div class="friend-item">No friends found</div>';
-                    return;
+                }else {
+                    displaySearchResults(friends);
                 }
-
-                displaySearchResults(friends);
             } catch (error) {
                 console.error('Error searching friends:', error);
                 resultsContainer.innerHTML = '<div class="friend-item">Error searching friends</div>';
@@ -357,7 +360,11 @@
                 const friendItem = document.createElement('div');
                 friendItem.className = 'friend-item';
                 friendItem.textContent = friend.name;
-                friendItem.onclick = () => addMember(friend);
+                friendItem.onclick = () => {
+                    console.log(`Attempting to add friend: ${friend.name}`);
+                    addMember(friend);
+                };
+
                 resultsContainer.appendChild(friendItem);
             });
         }
@@ -372,7 +379,7 @@
                 } else {
                     document.getElementById('searchResults').innerHTML = '';
                 }
-            }, 300); // 300ms delay
+            }, 200); // 200ms delay
 
             searchInput.addEventListener('input', (e) => {
                 const query = e.target.value;
@@ -389,6 +396,11 @@
 
         async function addMember(friend) {
             try {
+                const searchResults = document.getElementById('searchResults');
+                searchResults.classList.add('disabled');
+                showError('Adding member...');
+                console.log(`Adding member ${friend.name} in progress...`);
+
                 await databases.createDocument(
                     DATABASE_ID,
                     GROUP_MEMBERS_COLLECTION_ID,
@@ -400,13 +412,18 @@
                     }
                 );
 
+                groupMembers.add(friend.accountId);
+
                 document.getElementById('searchInput').value = '';
-                document.getElementById('searchResults').innerHTML = '';
-                await loadMembers();
                 showError('Member added successfully');
+                await loadMembers();
             } catch (error) {
                 console.error('Error adding member:', error);
                 showError('Failed to add member');
+            } finally {
+                // Re-enable search results after the add process is done
+                searchResults.classList.remove('disabled');
+                searchResults.innerHTML = '';
             }
         }
 
@@ -428,7 +445,7 @@
 
             setTimeout(() => {
                 errorDiv.remove();
-            }, 3000);
+            }, 5000);
         }
 
         function goBack() {
