@@ -2,6 +2,10 @@ var user_friendslist = [];
 
 const DATABASE_ID = "66f9e43e00253528c7a8";
 const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
+const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
+const GROUPS_COLLECTION_ID = "66ffed4e001b7299c97c";
+const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
+const USERS_COLLECTION_ID = "66f9e45d002562334094";
 
 console.log(client);
 
@@ -30,8 +34,8 @@ const getFriendsData = async () => {
 
     // Fetch all friend relationships
     const response = await databases.listDocuments(
-      "66f9e43e00253528c7a8",
-      "66fc597e0027848acf57",
+      DATABASE_ID,
+      FRIENDS_COLLECTION_ID,
       [
         Appwrite.Query.equal('status', 'accepted'),
         Appwrite.Query.or([
@@ -56,8 +60,8 @@ const getFriendsData = async () => {
         try {
           // Fetch friend's details
           const friendsResponse = await databases.listDocuments(
-            "66f9e43e00253528c7a8",
-            "66f9e45d002562334094",
+            DATABASE_ID,
+            USERS_COLLECTION_ID,
             [Appwrite.Query.equal("accountId", friendId)]
           );
 
@@ -113,11 +117,13 @@ const getGroups = async () => {
     const groupsListContainer = document.querySelector('ul[role="list"]');
     groupsListContainer.innerHTML = '';
 
+    const user = await account.get();
+
     console.log("Updating Groups List");
     const response = await databases.listDocuments(
-      "66f9e43e00253528c7a8",
-      "66ffef8e000e9a26e8bf",
-      [Appwrite.Query.equal("memberId", "66fc9df006e60a5356bc")]
+      DATABASE_ID,
+      GROUP_MEMBERS_COLLECTION_ID,
+      [Appwrite.Query.equal("memberId", user.$id)]
     );
 
     console.log(response.documents);
@@ -126,8 +132,8 @@ const getGroups = async () => {
     resp.forEach(async (element) => {
       try {
         const groupResponse = await databases.listDocuments(
-          "66f9e43e00253528c7a8",
-          "66ffed4e001b7299c97c",
+          DATABASE_ID,
+          GROUPS_COLLECTION_ID,
           [Appwrite.Query.equal("$id", element.groupid)]
         );
 
