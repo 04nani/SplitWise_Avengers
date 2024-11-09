@@ -221,6 +221,8 @@
         const groupId = urlParams.get('groupId');
         let currentUserId;
         let groupMembers = new Set();
+        let friends = new Set();
+        let friendNames = {};
 
         // Debounce utility function
         function debounce(func, wait) {
@@ -241,6 +243,44 @@
                 currentUserId = user.$id;
                 await loadMembers();
                 setupSearchListener();
+
+                // Load friends
+                const friendsResponse = await databases.listDocuments(
+                    DATABASE_ID,
+                    FRIENDS_COLLECTION_ID,
+                    [
+                        Appwrite.Query.equal('status', 'accepted'),
+                        Appwrite.Query.or([
+                            Appwrite.Query.equal('userId', currentUserId),
+                            Appwrite.Query.equal('friendId', currentUserId)
+                        ])
+                    ]
+                );
+
+                friendsResponse.documents.forEach(friend => {
+                    friends.add(friend.friendId);
+                    friends.add(friend.userId);
+                });
+
+                // remove current user from friends
+                friends.delete(currentUserId);
+
+                // Get friend names
+                const friendPromises = Array.from(friends).map(friendId =>
+                    databases.listDocuments(
+                        DATABASE_ID,
+                        USERS_COLLECTION_ID,
+                        [Appwrite.Query.equal('accountId', friendId)]
+                    )
+                );
+
+                const results = await Promise.all(friendPromises);
+
+                results.forEach(result => {
+                    const friend = result.documents[0];
+                    friendNames[friend.accountId] = friend.name;
+                });
+
             } catch (error) {
                 console.error('Error initializing:', error);
                 showError('Failed to load settings');
@@ -311,35 +351,15 @@
                 // Show loading state
                 resultsContainer.innerHTML = '<div class="friend-item loading">Searching...</div>';
 
-                // Get user's friends
-                const friendsResponse = await databases.listDocuments(
-                    DATABASE_ID,
-                    FRIENDS_COLLECTION_ID,
-                    [
-                        Appwrite.Query.equal('status', 'accepted'),
-                        Appwrite.Query.or([
-                            Appwrite.Query.equal('userId', currentUserId),
-                            Appwrite.Query.equal('friendId', currentUserId)
-                        ])
-                    ]
-                );
-
-                const friendPromises = friendsResponse.documents.map(friend =>
-                    databases.listDocuments(
-                        DATABASE_ID,
-                        USERS_COLLECTION_ID,
-                        [Appwrite.Query.equal('accountId', friend.friendId)]
+                // Search friends from the friendNames object
+                const friends = Object.entries(friendNames)
+                    .filter(([friendId, friendName]) =>
+                        friendName.toLowerCase().includes(query.toLowerCase()) && !groupMembers.has(friendId)
                     )
-                );
-
-                const results = await Promise.all(friendPromises);
-                const friends = results
-                    .map(result => result.documents[0])
-                    .filter(friend =>
-                        friend &&
-                        !groupMembers.has(friend.accountId) &&
-                        friend.name.toLowerCase().includes(query.toLowerCase())
-                    );
+                    .map(([friendId, friendName]) => ({
+                        accountId: friendId,
+                        name: friendName
+                    }));
 
                 if (friends.length === 0) {
                     resultsContainer.innerHTML = '<div class="friend-item">No friends found</div>';
