@@ -165,20 +165,30 @@
         }
 
         async function unsendFriendRequest(requestId) {
-            try {
-                await databases.deleteDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, requestId);
-                document.getElementById("feedback").style.display = "block";
-                setTimeout(() => {
-                    document.getElementById("feedback").style.display = "none";
-                }, 3000);
-                fetchFriendRequests();
-            } catch (error) {
-                console.error('Error unsending friend request:', error);
-                document.getElementById("feedback").textContent = "Failed to unsend friend request. Please try again.";
-                document.getElementById("feedback").style.color = "red";
-                document.getElementById("feedback").style.display = "block";
-            }
-        }
+    const feedback = document.getElementById("feedback");
+
+    try {
+        await databases.deleteDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, requestId);
+
+        feedback.textContent = "Friend request unsent successfully!";
+        feedback.style.color = "green";
+        feedback.style.display = "block";
+        
+        setTimeout(() => {
+            feedback.style.display = "none";
+        }, 3000);
+
+        
+        fetchFriendRequests();
+    } catch (error) {
+        console.error('Error unsending friend request:', error);
+
+        feedback.textContent = "Failed to unsend friend request. Please try again.";
+        feedback.style.color = "red";
+        feedback.style.display = "block";
+    }
+}
+
 
         window.onload = async () => {
             try {
