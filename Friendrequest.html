@@ -80,6 +80,10 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .feedback {
+            color: green;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +99,8 @@
             <h2>Pending Friend Requests</h2>
             <ul id="friendRequests"></ul>
         </div>
+
+        <div id="feedback" class="feedback">Friend request unsent successfully!</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
@@ -107,7 +113,6 @@
         const account = new Appwrite.Account(client);
 
         const DATABASE_ID = '66f9e43e00253528c7a8';
-        const USERS_COLLECTION_ID = '66f9e45d002562334094';
         const FRIENDS_COLLECTION_ID = '66fc597e0027848acf57';
 
         let currentUserId;
@@ -127,12 +132,10 @@
 
         async function getUserInfo(userId) {
             try {
-                let user = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+                let user = await databases.listDocuments(DATABASE_ID, '66f9e45d002562334094', [
                     Appwrite.Query.search('accountId', userId)
                 ]);
                 user = user.documents[0];
-                
-                console.log('User info:', user);
                 return user.name || 'Unknown User';
             } catch (error) {
                 console.error('Error fetching user info:', error);
@@ -151,158 +154,29 @@
 
                 const buttonContainer = document.createElement('div');
 
-                const acceptButton = document.createElement('button');
-                acceptButton.textContent = 'Accept';
-                acceptButton.onclick = () => updateFriendRequestStatus(request.$id, 'accepted');
+                const unsendButton = document.createElement('button');
+                unsendButton.textContent = 'Unsend Request';
+                unsendButton.onclick = () => unsendFriendRequest(request.$id);
                 
-                const rejectButton = document.createElement('button');
-                rejectButton.textContent = 'Reject';
-                rejectButton.onclick = () => updateFriendRequestStatus(request.$id, 'rejected');
-                
-                buttonContainer.appendChild(acceptButton);
-                buttonContainer.appendChild(rejectButton);
+                buttonContainer.appendChild(unsendButton);
                 li.appendChild(buttonContainer);
                 requestsList.appendChild(li);
             }
         }
 
-        async function updateFriendRequestStatus(requestId, status) {
+        async function unsendFriendRequest(requestId) {
             try {
-                await databases.updateDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, requestId, { status: status, updated_at: new Date().toISOString() });
-                alert(`Friend request ${status}`);
+                await databases.deleteDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, requestId);
+                document.getElementById("feedback").style.display = "block";
+                setTimeout(() => {
+                    document.getElementById("feedback").style.display = "none";
+                }, 3000);
                 fetchFriendRequests();
             } catch (error) {
-                console.error('Error updating friend request:', error);
-            }
-        }
-
-        let debounceTimer;
-        const debounceSearch = (callback, delay) => {
-         clearTimeout(debounceTimer);
-         debounceTimer = setTimeout(callback, delay);
-        };
-
-        document.getElementById('friendSearch').addEventListener('input', (event) => {
-        const query = event.target.value;
-        debounceSearch(() => performSearch(query), 300);
-        });
-        
-        async function performSearch(query){
-        if (query) {
-            try {
-                const resultsList = document.getElementById('searchResults');
-                resultsList.innerHTML = '';
-
-                const results = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
-                    Appwrite.Query.search('name', query)
-                ]);
-                
-                await displaySearchResults(results.documents);
-            } catch (error) {
-                console.error('Error fetching search results:', error);
-            }
-        }
-    }
-
-        async function fetchExistingRequests() {
-            try {
-                const requests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-                    Appwrite.Query.equal('userId', currentUserId),
-                    Appwrite.Query.equal('status', 'pending')
-                ]);
-                return requests.documents.map(req => req.friendId);
-            } catch (error) {
-                console.error('Error fetching existing requests:', error);
-                return [];
-            }
-        }
-
-        async function displaySearchResults(users) {
-            const resultsList = document.getElementById('searchResults');
-            resultsList.innerHTML = '';
-            
-            const existingRequests = await fetchExistingRequests();
-            
-            users.forEach(user => {
-                if (user.accountId !== currentUserId) {
-                    const li = document.createElement('li');
-                    li.textContent = user.name;
-
-                    const sendRequestButton = document.createElement('button');
-                    
-                    if (existingRequests.includes(user.$id)) {
-                        sendRequestButton.textContent = 'Unsend Request';
-                        sendRequestButton.onclick = () => unsendFriendRequest(user.accountId, sendRequestButton);
-                    } else {
-                        sendRequestButton.textContent = 'Send Friend Request';
-                        sendRequestButton.onclick = () => sendFriendRequest(user.accountId, sendRequestButton);
-                    }
-                    
-                    li.appendChild(sendRequestButton);
-                    resultsList.appendChild(li);
-                }
-            });
-        }
-
-        async function sendFriendRequest(friendId, button) {
-            try {
-                const existingRequests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-                    Appwrite.Query.equal('userId', currentUserId),
-                    Appwrite.Query.equal('friendId', friendId),
-                    Appwrite.Query.equal('status', 'pending')
-                ]);
-                
-                const reverseRequests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-                    Appwrite.Query.equal('userId', friendId),
-                    Appwrite.Query.equal('friendId', currentUserId),
-                    Appwrite.Query.equal('status', 'pending')
-                ]);
-                
-                if (existingRequests.documents.length > 0 || reverseRequests.documents.length > 0) {
-                    button.disabled = true;
-                    button.textContent = 'Request Pending';
-                    return;
-                }
-
-                const data = {
-                    userId: currentUserId,
-                    friendId: friendId,
-                    status: 'pending',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-
-                const response = await databases.createDocument(
-                    DATABASE_ID, 
-                    FRIENDS_COLLECTION_ID, 
-                    Appwrite.ID.unique(),
-                    data
-                );
-                
-                button.disabled = true;
-                button.textContent = 'Request Sent';
-            } catch (error) {
-                console.error('Error sending friend request:', error);
-            }
-        }
-
-        async function unsendFriendRequest(friendId, button) {
-            try {
-                const pendingRequest = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
-                    Appwrite.Query.equal('userId', currentUserId),
-                    Appwrite.Query.equal('friendId', friendId),
-                    Appwrite.Query.equal('status', 'pending')
-                ]);
-
-                if (pendingRequest.documents.length > 0) {
-                    await databases.deleteDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, pendingRequest.documents[0].$id);
-                    
-                    button.disabled = false;
-                    button.textContent = 'Send Friend Request';
-                    button.onclick = () => sendFriendRequest(friendId, button);
-                }
-            } catch (error) {
                 console.error('Error unsending friend request:', error);
+                document.getElementById("feedback").textContent = "Failed to unsend friend request. Please try again.";
+                document.getElementById("feedback").style.color = "red";
+                document.getElementById("feedback").style.display = "block";
             }
         }
 
