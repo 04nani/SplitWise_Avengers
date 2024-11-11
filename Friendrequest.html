@@ -257,14 +257,11 @@
                     Appwrite.Query.equal('status', 'pending')
                 ]);
                 
-                if (existingRequests.includes(user.$id)) {
-    sendRequestButton.disabled = true;
-    sendRequestButton.textContent = 'Request Pending';
-} else {
-    sendRequestButton.onclick = () => sendFriendRequest(user.accountId, sendRequestButton);
-}
-
-
+                if (existingRequests.documents.length > 0 || reverseRequests.documents.length > 0) {
+                    button.disabled = true;
+                    button.textContent = 'Request Pending';
+                    return;
+                }
 
                 const data = {
                     userId: currentUserId,
@@ -287,8 +284,6 @@
                 console.error('Error sending friend request:', error);
             }
         }
-        
-
 
         window.onload = async () => {
             try {
