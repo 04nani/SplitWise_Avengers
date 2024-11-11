@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Chat UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background-color: #2A2A2A;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+        }
+
+        .chat-header {
+            background-color: #232323;
+            padding: 20px;
+            border-bottom: 1px solid #363636;
+        }
+
+        .chat-header h1 {
+            color: #57BB8A;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+        }
+
+        .message-info {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .sender {
+            color: #57BB8A;
+            font-size: 0.875rem;
+        }
+
+        .time {
+            color: #888888;
+            font-size: 0.75rem;
+        }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 12px;
+            background-color: #363636;
+            color: #ffffff;
+        }
+
+        .message.sent .message-content {
+            background-color: #57BB8A;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background-color: #232323;
+            border-top: 1px solid #363636;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #404040;
+            background-color: #363636;
+            color: #ffffff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .message-input:focus {
+            border-color: #57BB8A;
+        }
+
+        .message-input::placeholder {
+            color: #888888;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background-color: #57BB8A;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .send-button:hover {
+            background-color: #4ca77a;
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #232323;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #4d4d4d;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1></h1>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be added here by JavaScript -->
+        </div>
+        <div class="chat-input">
+            <div class="input-container">
+                <input type="text" class="message-input" id="message-input" placeholder="Type a message...">
+                <button class="send-button" onclick="sendMessage()">
+                    Send
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+
+    <script>
+        // Appwrite configuration
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('66f9c641001dbbd4bb66');
+
+        const databases = new Appwrite.Databases(client);
+        const account = new Appwrite.Account(client);
+
+        const DATABASE_ID = "66f9e43e00253528c7a8";
+        const USERS_COLLECTION_ID = "66f9e45d002562334094";
+        const GROUPS_COLLECTION_ID = "66ffed4e001b7299c97c";
+        const GROUP_MEMBERS_COLLECTION_ID = "66ffef8e000e9a26e8bf";
+        const GROUP_MESSAGES_COLLECTION_ID = "67321d7c002d4b0197a7";
+        const MESSAGES_PER_PAGE = 20;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('groupId');
+
+        let lastMessageId = null;
+        let isLoading = false;
+        let isGroupMember = false;
+        let currentUserId = null;
+        let unsubscribe = null;
+        let displayedMessageIds = new Set();
+        let groupMembers = [];
+
+        async function init() {
+            try {
+                await checkGroupMembership();
+                if (!isGroupMember) {
+                    showError("You are not a member of this group");
+                    document.querySelector('.chat-input').style.display = 'none';
+                    return;
+                }
+
+                await getGroupMembers();
+                await loadGroupDetails();
+                await loadMessages();
+                subscribeToMessages();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Failed to initialize chat');
+            }
+        }
+
+        async function checkGroupMembership() {
+            const user = await account.get();
+            currentUserId = user.$id;
+
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                GROUP_MEMBERS_COLLECTION_ID,
+                [
+                    Appwrite.Query.equal('groupid', groupId),
+                    Appwrite.Query.equal('memberId', currentUserId)
+                ]
+            );
+            isGroupMember = response.documents.length > 0;
+        }
+
+        async function getGroupMembers() {
+            const response = await databases.listDocuments(
+                DATABASE_ID,
+                GROUP_MEMBERS_COLLECTION_ID,
+                [Appwrite.Query.equal('groupid', groupId)]
+            );
+
+            for (const member of response.documents) {
+                const user = await databases.listDocuments(
+                    DATABASE_ID,
+                    USERS_COLLECTION_ID,
+                    [Appwrite.Query.equal('accountId', member.memberId)]
+                );
+                groupMembers.push(user.documents[0]);
+            }
+        }
+
+        async function loadGroupDetails() {
+            try {
+                const response = await databases.listDocuments(
+                    DATABASE_ID,
+                    GROUPS_COLLECTION_ID,
+                    [Appwrite.Query.equal('$id', groupId)]
+                );
+
+                if (response.documents.length > 0) {
+                    const group = response.documents[0];
+                    document.querySelector('.chat-header h1').textContent = group.groupName;
+                    document.title = group.groupName;
+                }
+            } catch (error) {
+                console.error('Error loading group details:', error);
+            }
+        }
+
+        async function loadMessages(loadMore = false) {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+                let queries = [
+                    Appwrite.Query.equal('groupId', groupId),
+                    Appwrite.Query.orderDesc('$createdAt'),
+                    Appwrite.Query.limit(MESSAGES_PER_PAGE)
+                ];
+
+                if (loadMore && lastMessageId) {
+                    queries.push(Appwrite.Query.cursorAfter(lastMessageId));
+                }
+
+                const messagesResponse = await databases.listDocuments(
+                    DATABASE_ID,
+                    GROUP_MESSAGES_COLLECTION_ID,
+                    queries
+                );
+
+                if (messagesResponse.documents.length > 0) {
+                    lastMessageId = messagesResponse.documents[messagesResponse.documents.length - 1].$id;
+                    const messages = [...messagesResponse.documents].reverse();
+                    if (!loadMore) {
+                        displayedMessageIds.clear();
+                    }
+                    await displayMessages(messages, loadMore);
+
+                    if (!loadMore) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                } else if (!loadMore) {
+                    displayedMessageIds.clear();
+                    messagesContainer.innerHTML = '<div class="loading">No messages yet</div>';
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                showError('Failed to load messages');
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function displayMessages(messages, prepend = false) {
+            const fragment = document.createDocumentFragment();
+
+            for (const message of messages) {
+                if (displayedMessageIds.has(message.$id)) {
+                    continue;
+                }
+
+                displayedMessageIds.add(message.$id);
+
+                const sender = groupMembers.find(member => member.accountId === message.senderId);
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `message ${message.senderId === currentUserId ? 'sent' : ''}`;
+                messageWrapper.id = `message-${message.$id}`;
+
+                const messageInfo = document.createElement('div');
+                messageInfo.className = 'message-info';
+
+                const senderSpan = document.createElement('span');
+                senderSpan.className = 'sender';
+                senderSpan.textContent = sender ? sender.name : 'Unknown User';
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'time';
+                timeSpan.textContent = new Date(message.$createdAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.textContent = message.content;
+
+                messageInfo.appendChild(senderSpan);
+                messageInfo.appendChild(timeSpan);
+                messageWrapper.appendChild(messageInfo);
+                messageWrapper.appendChild(messageContent);
+
+                fragment.appendChild(messageWrapper);
+            }
+
+            const messagesContainer = document.getElementById('chat-messages');
+
+            if (prepend) {
+                const scrollHeight = messagesContainer.scrollHeight;
+                const scrollTop = messagesContainer.scrollTop;
+
+                if (messagesContainer.firstChild) {
+                    messagesContainer.insertBefore(fragment, messagesContainer.firstChild);
+                } else {
+                    messagesContainer.appendChild(fragment);
+                }
+
+                messagesContainer.scrollTop = scrollTop + (messagesContainer.scrollHeight - scrollHeight);
+            } else {
+                if (!prepend && messages.length === 1) {
+                    messagesContainer.appendChild(fragment);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } else {
+                    messagesContainer.innerHTML = '';
+                    displayedMessageIds.clear();
+                    messages.forEach(msg => displayedMessageIds.add(msg.$id));
+                    messagesContainer.appendChild(fragment);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+
+            if (!content || !isGroupMember) return;
+
+            const button = document.querySelector('.send-button');
+            button.disabled = true;
+
+            try {
+                const message = await databases.createDocument(
+                    DATABASE_ID,
+                    GROUP_MESSAGES_COLLECTION_ID,
+                    Appwrite.ID.unique(),
+                    {
+                        content: content,
+                        senderId: currentUserId,
+                        groupId: groupId
+                    }
+                );
+
+                input.value = '';
+                input.focus();
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showError('Failed to send message');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function subscribeToMessages() {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+
+            unsubscribe = client.subscribe(
+                `databases.${DATABASE_ID}.collections.${GROUP_MESSAGES_COLLECTION_ID}.documents`,
+                response => {
+                    const message = response.payload;
+
+                    if (message.groupId === groupId) {
+                        if (response.events.includes('databases.*.collections.*.documents.*.create')) {
+                            if (!document.getElementById(`message-${message.$id}`)) {
+                                displayMessages([message], false);
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        function showError(message) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            messagesContainer.innerHTML = '';
+            messagesContainer.appendChild(errorDiv);
+        }
+
+        // Event listeners
+        const messagesContainer = document.getElementById('chat-messages');
+        let scrollTimeout;
+
+        messagesContainer.addEventListener('scroll', () => {
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(async () => {
+                if (messagesContainer.scrollTop === 0 && !isLoading) {
+                    await loadMessages(true);
+                }
+            }, 150);
+        });
+
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribe) unsubscribe();
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+        });
+
+        // Initialize if group ID is present
+        if (groupId) {
+            init();
+        } else {
+            showError('No group selected');
+            document.querySelector('.chat-input').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
