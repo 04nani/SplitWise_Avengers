@@ -623,7 +623,7 @@
                         GROUP_MEMBERS_COLLECTION_ID,
                         [
                             Appwrite.Query.equal('groupId', groupId),
-                            Appwrite.Query.equal('userId', currentUserId)
+                            Appwrite.Query.equal('memberId', currentUserId)
                         ]
                     );
 
