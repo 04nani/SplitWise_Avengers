@@ -257,11 +257,14 @@
                     Appwrite.Query.equal('status', 'pending')
                 ]);
                 
-                if (existingRequests.documents.length > 0 || reverseRequests.documents.length > 0) {
-                    button.disabled = true;
-                    button.textContent = 'Request Pending';
-                    return;
-                }
+                if (existingRequests.includes(user.$id)) {
+    requestButton.textContent = 'Unsend Request';
+    requestButton.onclick = () => unsendFriendRequest(user.accountId, requestButton);
+} else {
+    requestButton.textContent = 'Send Friend Request';
+    requestButton.onclick = () => sendFriendRequest(user.accountId, requestButton);
+}
+
 
                 const data = {
                     userId: currentUserId,
@@ -284,6 +287,27 @@
                 console.error('Error sending friend request:', error);
             }
         }
+        async function unsendFriendRequest(friendId, button) {
+    try {
+        const pendingRequest = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+            Appwrite.Query.equal('userId', currentUserId),
+            Appwrite.Query.equal('friendId', friendId),
+            Appwrite.Query.equal('status', 'pending')
+        ]);
+
+        if (pendingRequest.documents.length > 0) {
+            await databases.deleteDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, pendingRequest.documents[0].$id);
+            
+            alert('Friend request unsent');
+            button.disabled = false;
+            button.textContent = 'Send Friend Request';
+            button.onclick = () => sendFriendRequest(friendId, button);
+        }
+    } catch (error) {
+        console.error('Error unsending friend request:', error);
+    }
+}
+
 
         window.onload = async () => {
             try {
