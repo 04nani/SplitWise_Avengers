@@ -95,6 +95,11 @@
             <h2>Pending Friend Requests</h2>
             <ul id="friendRequests"></ul>
         </div>
+
+        <div class="sent-requests">
+            <h2>Sent Friend Requests</h2>
+            <ul id="sentRequests"></ul>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/appwrite@11.0.0"></script>
@@ -118,8 +123,26 @@
                     Appwrite.Query.equal('friendId', currentUserId),
                     Appwrite.Query.equal('status', 'pending')
                 ]);
+
+                if (requests.documents.length === 0) {
+                    document.querySelector('.friend-requests').style.display = 'none';
+                } else {
+                    document.querySelector('.friend-requests').style.display = 'block';
+                    await displayFriendRequests(requests.documents);
+                }
+
+                const sentRequests = await databases.listDocuments(DATABASE_ID, FRIENDS_COLLECTION_ID, [
+                    Appwrite.Query.equal('userId', currentUserId),
+                    Appwrite.Query.equal('status', 'pending')
+                ]);
+
+                if (sentRequests.documents.length === 0) {
+                    document.querySelector('.sent-requests').style.display = 'none';
+                } else {
+                    document.querySelector('.sent-requests').style.display = 'block';
+                    await displaySentRequests(sentRequests.documents);
+                }
                 
-                await displayFriendRequests(requests.documents);
             } catch (error) {
                 console.error('Error fetching friend requests:', error);
             }
@@ -162,6 +185,31 @@
                 buttonContainer.appendChild(rejectButton);
                 li.appendChild(buttonContainer);
                 requestsList.appendChild(li);
+            }
+        }
+
+        async function displaySentRequests(requests) {
+            const requestsList = document.getElementById('sentRequests');
+            requestsList.innerHTML = '';
+            
+            for (const request of requests) {
+                const li = document.createElement('li');
+                const userName = await getUserInfo(request.friendId);
+                li.textContent = userName;
+                const unsendButton = document.createElement('button');
+                unsendButton.textContent = 'Unsend Request';
+                unsendButton.onclick = () => unsendFriendRequest(request.$id, li);
+                li.appendChild(unsendButton);
+                requestsList.appendChild(li);
+            }
+        }
+
+        async function unsendFriendRequest(requestId, li) {
+            try {
+                await databases.deleteDocument(DATABASE_ID, FRIENDS_COLLECTION_ID, requestId);
+                li.remove();
+            } catch (error) {
+                console.error('Error deleting friend request:', error);
             }
         }
 
@@ -271,12 +319,23 @@
                     updated_at: new Date().toISOString()
                 };
 
-                await databases.createDocument(
+
+                const sendRequestData = await databases.createDocument(
                     DATABASE_ID, 
                     FRIENDS_COLLECTION_ID, 
                     Appwrite.ID.unique(),
                     data
                 );
+
+                document.querySelector('.sent-requests').style.display = 'block';
+                const sentRequestsList = document.getElementById('sentRequests');
+                const li = document.createElement('li');
+                li.textContent = await getUserInfo(friendId);
+                const unsendButton = document.createElement('button');
+                unsendButton.textContent = 'Unsend Request';
+                unsendButton.onclick = () => unsendFriendRequest(sendRequestData.$id, li);
+                li.appendChild(unsendButton);
+                sentRequestsList.appendChild(li);
                 
                 button.disabled = true;
                 button.textContent = 'Request Sent';
