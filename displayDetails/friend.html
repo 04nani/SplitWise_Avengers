@@ -243,6 +243,108 @@
         .amount-owed {
             color: #ff4444;
         }
+
+        #settleUpOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        #settleUpOverlay .overlay-content {
+            background-color: #2d2d2d;
+            padding: 28px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            margin: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        #settleUpOverlay input {
+            padding: 12px 16px;
+            width: 85%;
+            border-radius: 8px;
+            border: 1px solid #404040;
+            margin-bottom: 24px;
+            font-size: 1rem;
+            background-color: #363636;
+            color: #ffffff;
+            transition: border-color 0.2s ease;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+
+        #settleUpOverlay input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        #settleUpOverlay input::-webkit-outer-spin-button,
+        #settleUpOverlay input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        #settleUpOverlay input:focus {
+            outline: none;
+            border-color: #1cc29f;
+            box-shadow: 0 0 0 2px rgba(28, 194, 159, 0.2);
+        }
+
+        #settleUpOverlay input::placeholder {
+            color: #888888;
+        }
+
+        #settleUpOverlay button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin: 5px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        #cancelSettleUp {
+            background-color: #424242;
+            min-width: 120px;
+        }
+        
+        #cancelSettleUp:hover {
+            background-color: #4a4a4a;
+            transform: translateY(-1px);
+        }
+
+        #submitSettleUp {
+            background-color: #1cc29f;
+            min-width: 120px;
+        }
+
+        #submitSettleUp:hover {
+            background-color: #19af8f;
+            transform: translateY(-1px);
+        }
+
+        #settleUpOverlay button:nth-child(2) {
+            background-color: #424242;
+            min-width: 120px;
+        }
+
+        #settleUpOverlay button:nth-child(2):hover {
+            background-color: #4a4a4a;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 
@@ -298,6 +400,17 @@
         </div>
     </div>
 
+    <div id="settleUpOverlay">
+        <div class="overlay-content">
+            <h2>Settle Up</h2>
+            <br>
+            <input type="number" id="settleAmount" placeholder="Enter amount">
+            <br>
+            <button id="submitSettleUp">Settle Up</button>
+            <button id="cancelSettleUp" onclick="closeSettleUp()">Cancel</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
     <script>
         const client = new Appwrite.Client();
@@ -313,9 +426,13 @@
         const USERS_COLLECTION_ID = "66f9e45d002562334094";
         const ACTIVITIES_COLLECTION_ID = "6702c39100338b173d15";
         const FRIENDS_COLLECTION_ID = "66fc597e0027848acf57";
+        const EXPENSES_COLLECTION_ID = "6702d327003c89118e37";
 
         const urlParams = new URLSearchParams(window.location.search);
         const friendId = urlParams.get('friendId');
+
+        let currentUserId = '';
+        let totalBalance = 0;
 
         async function checkFriendship(friendId) {
             try {
@@ -415,7 +532,7 @@
 
         function updateExpensesList(expenses, currentUserId) {
             const expensesList = document.querySelector('.expenses-list');
-            let totalBalance = 0;
+            totalBalance = 0;
 
             // Keep the header
             expensesList.innerHTML = '<div class="expenses-header">Recent Expenses</div>';
@@ -528,6 +645,69 @@
                 showError('Failed to remove friend');
             }
         }
+
+        const settleButton = document.querySelector('.settle-button');
+        const settleUpOverlay = document.getElementById('settleUpOverlay');
+        const settleAmountInput = document.getElementById('settleAmount');
+
+        settleButton.addEventListener('click', () => {
+            settleUpOverlay.style.display = 'flex';
+        });
+
+        function closeSettleUp() {
+            settleUpOverlay.style.display = 'none';
+            settleAmountInput.value = '';
+        }
+
+        document.getElementById('submitSettleUp').addEventListener('click', async () => {
+            const settleAmount = parseFloat(settleAmountInput.value);
+
+            if (isNaN(settleAmount) || settleAmount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            try {
+                const settleUpActivity = await databases.createDocument(
+                    DATABASE_ID,
+                    ACTIVITIES_COLLECTION_ID,
+                    Appwrite.ID.unique(),
+                    {
+                        description: 'Settle Up Payment',
+                        paidById: currentUserId,
+                        groupId: null,
+                        time: new Date().toISOString(),
+                        amount: parseFloat(settleAmount),
+                        splitMembers: `${friendId}$$${settleAmount}##`,
+                        user_involvement: true,
+                        expense_category: null,
+                    }
+                );
+
+                await databases.createDocument(
+                    DATABASE_ID,
+                    EXPENSES_COLLECTION_ID,
+                    Appwrite.ID.unique(),
+                    {
+                        payerId: currentUserId,
+                        receiverId: friendId,
+                        amount: parseFloat(settleAmount),
+                        time: new Date().toISOString(),
+                        status: "settled", 
+                        groupId: null,
+                        activityId: settleUpActivity.$id
+                    }
+                );
+
+                const expenses = await fetchExpenses(currentUserId, friendId);
+                updateExpensesList(expenses, currentUserId);
+
+                closeSettleUp();
+            } catch (error) {
+                console.error('Error settling up:', error);
+                alert('Failed to settle up');
+            }
+        });
 
         // Initialize
         if (friendId) {
